@@ -5,9 +5,12 @@
 ---
 
 ## 환경 사전 조건
-1. Figma 파일 존재 (`fileKey` 확보)
+1. **기본 작업 파일/페이지** (전역 규칙, `~/.claude/CLAUDE.md` 참조):
+   - fileKey: `CVeyCAgnLzNqGPbKlHh8wN` (HANSY)
+   - 작업 페이지: `Claude Area` (id: `8297:11349`)
+   - 사용자가 다른 파일/페이지 명시 시에만 예외
 2. Logo_korean 컴포넌트 접근 가능 (당근 enterprise workspace)
-3. 이미지 사용하려면 동일 파일에 `assets` 페이지 + `img_<name>` 프레임에 이미지 업로드 필요
+3. 이미지 사용하려면 같은 파일에 `assets` 페이지 + `img_<name>` 프레임에 이미지 업로드 필요
 
 ---
 
@@ -239,24 +242,51 @@ async function layD(F,w,h){
 }
 
 // ============================================================
-// 페이지 처리: 동일 이름 페이지 있으면 재사용, 없으면 신규.
-// 다른 캠페인 페이지는 절대 건드리지 않음.
+// Claude Area 페이지에 컨테이너 frame으로 배치 (전역 규칙)
+// ~/.claude/CLAUDE.md 의 "Figma 작업 규칙" 적용
+// 같은 날(YYMMDD): 옆에 / 다른 날: 아래 새 행
 // ============================================================
-const root=figma.root;
-let pg=root.children.find(p=>p.name===PAGE_NAME);
-if(!pg){pg=figma.createPage();pg.name=PAGE_NAME;}
+const CLAUDE_AREA_ID='8297:11349';
+const pg=figma.getNodeById(CLAUDE_AREA_ID);
+if(!pg)throw new Error('Claude Area 페이지를 찾을 수 없음');
 await figma.setCurrentPageAsync(pg);
-[...pg.children].forEach(c=>{try{c.remove();}catch(e){}});
+
+const _d=new Date();
+const yymmdd=_d.getFullYear().toString().slice(2)+String(_d.getMonth()+1).padStart(2,'0')+String(_d.getDate()).padStart(2,'0');
+
+// PAGE_NAME을 컨테이너 이름으로 사용. 같은 이름 있으면 재사용(재실행), 없으면 신규 + 위치 계산.
+let container=pg.children.find(c=>c.name===PAGE_NAME);
+if(container){
+  [...container.children].forEach(c=>{try{c.remove();}catch(e){}});
+}else{
+  let oX=0,oY=0;
+  const todayKids=pg.children.filter(c=>c.name.includes(yymmdd));
+  if(todayKids.length>0){
+    const last=todayKids.reduce((a,b)=>(a.x+a.width>=b.x+b.width)?a:b);
+    oX=last.x+last.width+120;
+    oY=todayKids.reduce((a,b)=>a.y<b.y?a:b).y;
+  }else if(pg.children.length>0){
+    const lowest=pg.children.reduce((a,b)=>(a.y+a.height>=b.y+b.height)?a:b);
+    oX=0;
+    oY=lowest.y+lowest.height+200;
+  }
+  container=figma.createFrame();
+  container.name=PAGE_NAME;
+  container.fills=[];
+  container.clipsContent=false;
+  pg.appendChild(container);
+  container.x=oX;container.y=oY;
+}
 
 if(needsFontNote){
   const note=F_('⚠️ 폰트 교체 안내',1800,70,T.note);
-  pg.appendChild(note);note.x=0;note.y=-110;
+  container.appendChild(note);note.x=0;note.y=-110;
   const nt=TX('⚠️ Noto Sans KR Black/Bold (임시) → Figma 데스크톱에서 Karrot Sans로 교체',22,HV,T.text);
   note.appendChild(nt);nt.x=20;nt.y=22;
 }
 
 // ============================================================
-// 10개 배너 생성 (몰로코 기본 세트)
+// 10개 배너 생성 (몰로코 기본 세트) — 컨테이너 내부에 배치
 // ============================================================
 const B=[
   ['배너 320×100',320,100,layA],
@@ -273,18 +303,24 @@ const B=[
 
 let cx=0,cy=0,rh=0;
 const GAP=120,RMAX=3600;
+let maxX=0,maxY=0;
 for(const [n,w,h,fn] of B){
   if(cx+w>RMAX){cy+=rh+GAP;cx=0;rh=0;}
   const F=F_(n,w,h,T.white);
-  pg.appendChild(F); // scenegraph 먼저 붙인 뒤 내부 빌드 (auto-layout 계산 안정성)
+  container.appendChild(F); // 컨테이너 내부
   F.x=cx;F.y=cy;
   await fn(F,w,h);
+  if(cx+w>maxX)maxX=cx+w;
+  if(cy+h>maxY)maxY=cy+h;
   cx+=w+GAP;rh=Math.max(rh,h);
 }
 
-figma.viewport.scrollAndZoomIntoView(pg.children);
+// 컨테이너 크기를 컨텐츠에 맞춤
+container.resize(Math.max(maxX,1),Math.max(maxY,1));
+
+figma.viewport.scrollAndZoomIntoView([container]);
 figma.notify(`✅ ${PAGE_NAME} · ${HAS_IMG?'이미지':'기본'} · ${FAM}`);
-return `OK · ${PAGE_NAME}`;
+return `OK · ${PAGE_NAME} @ Claude Area (${container.x},${container.y})`;
 ```
 
 ---

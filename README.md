@@ -38,7 +38,8 @@ cd ~/.claude/skills && git add -A && git commit -m "설명" && git push
 2. Figma 신규 페이지(`주제_MMDD`)에 10종 배너 자동 생성
 3. 스크린샷 검증 → SEED 체크리스트 출력
 
-**Figma 파일:** `jcGlrj2PHajD3Gtz8dcf86` (광고 배너 — 몰로코)
+**Figma 파일:** `CVeyCAgnLzNqGPbKlHh8wN` (HANSY) → `Claude Area` 페이지 (`8297:11349`) 안에 컨테이너 frame으로 적재
+- 같은 날 만든 디자인은 옆에, 다른 날 디자인은 아래 새 행으로 자동 배치 (`~/.claude/CLAUDE.md` 전역 규칙)
 
 **Logo_korean 컴포넌트 키:**
 - Primary (밝은 배경): `7bd06aa4147de6d53637e133cf38a78659e36f63`
