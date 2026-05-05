@@ -2,6 +2,8 @@
 
 `use_figma`의 `code` 파라미터에 그대로 넣어 실행. 캠페인별로 상단 변수만 교체.
 
+1회 실행 = **락 10종 × V1~V4 = 40 프레임** 자동 생성. 사이즈마다 한 행에 V1→V4 가로 배치, 사이즈 누적 세로.
+
 ---
 
 ## 환경 사전 조건
@@ -19,6 +21,18 @@
 - 폰트: Karrot Sans 우선, 미가용 시 Noto Sans KR Black/Bold 폴백 + 노란 경고 프레임
 - Logo_korean: `importComponentByKeyAsync` (이모지 절대 금지)
 - 이미지: `figma.createImage / figma.createImageAsync(url)` 둘 다 cloud sandbox에서 차단됨. assets 페이지에 사용자가 직접 업로드한 이미지의 imageHash를 재활용하는 방식만 가능.
+- **장식원(deco circle) 금지** — 어떤 V에도 사용하지 않는다.
+
+---
+
+## V1~V4 골격 (사이즈/카테고리 무관)
+
+| V | 배경 | 헤드 색 | CTA |
+|---|---|---|---|
+| V1 | 흰색 | `fg.neutral` | 풀와이드 하단 `bg.brand-solid` 버튼 |
+| V2 | `bg.brand-solid` | white | 없음 (D는 `bg.brand-weak` 작은 CTA) |
+| V3 | `bg.brand-weak` | `fg.neutral` | 풀와이드 또는 인라인 |
+| V4 | 흰색 (B는 solid) | `fg.brand-solid` (B/V4는 white) | 풀와이드 또는 없음 |
 
 ---
 
@@ -29,11 +43,27 @@
 // 캠페인 변수 (캠페인마다 교체)
 // ============================================================
 const PAGE_NAME  = '노트북_중고거래_2604';        // [주제]_[MMDD]
-const HEAD       = '비싼 노트북,\n이웃이 살게요';   // 2줄, 각 줄 4~8자
+const HEAD       = '비싼 노트북,\n이웃이 살게요';   // 2~3줄
 const HEAD_W     = '이웃이 살게요 →';              // Wide Thin용 1줄
 const SUB        = '우리 동네 이웃과 당근에서 직거래';
 const CT         = '당근 열기';                   // 3~6자
-const IMAGE_ASSET= '';                           // 'img_<name>' 또는 '' (없으면 weak 배경)
+
+// ============================================================
+// 락 10종 사이즈 × V1~V4 변형
+// ============================================================
+const SIZES = [
+  {w:320,  h:100,  cat:'A'},
+  {w:300,  h:250,  cat:'B'},
+  {w:720,  h:720,  cat:'B'},
+  {w:480,  h:320,  cat:'C'},
+  {w:1200, h:628,  cat:'C'},
+  {w:320,  h:480,  cat:'D'},
+  {w:720,  h:960,  cat:'D'},
+  {w:768,  h:1024, cat:'D'},
+  {w:720,  h:1280, cat:'D'},
+  {w:1200, h:1600, cat:'D'},
+];
+const VARIANTS = ['V1','V2','V3','V4'];
 
 // ============================================================
 // 폰트
@@ -98,153 +128,229 @@ function Pill(label,sz,ph,pv,bg,fg){
   f.appendChild(t);
   return f;
 }
-const CTA=(l,sz)=>Pill(l,sz,Math.round(sz*1.1),Math.round(sz*0.45),T.solid,T.white);
-
-// ============================================================
-// 이미지 asset 조회 (assets 페이지의 img_<name> 프레임에서 imageHash 추출)
-// ============================================================
-function findAssetHash(name){
-  if(!name)return null;
-  const assetsPg=figma.root.children.find(p=>p.name==='assets');
-  if(!assetsPg)return null;
-  const node=assetsPg.findOne(n=>n.name===name);
-  if(!node||!node.fills)return null;
-  const imgFill=node.fills.find(f=>f.type==='IMAGE');
-  return imgFill?imgFill.imageHash:null;
-}
-const IMG_HASH=findAssetHash(IMAGE_ASSET);
-const HAS_IMG=!!IMG_HASH;
-
-// ============================================================
-// 이미지 fill + 다크 그라데이션 오버레이 (텍스트 가독성)
-// ============================================================
-function imageFill(hash){return [{type:'IMAGE',imageHash:hash,scaleMode:'FILL'}];}
-function gradient(w,h,fromTop){
-  // fromTop=true: 위에서 아래로 진해짐 (로고 영역) / false: 아래에서 위로 (텍스트 영역)
-  const r=figma.createRectangle();r.resize(w,h);
-  r.fills=[{
-    type:'GRADIENT_LINEAR',
-    gradientTransform:fromTop?[[0,1,0],[-1,0,1]]:[[0,-1,1],[1,0,0]],
-    gradientStops:[
-      {position:0,color:{r:0,g:0,b:0,a:0.7}},
-      {position:1,color:{r:0,g:0,b:0,a:0}}
-    ]
-  }];
-  return r;
+const CTA=(l,sz,bg,fg)=>Pill(l,sz,Math.round(sz*1.1),Math.round(sz*0.45),bg||T.solid,fg||T.white);
+// 풀와이드 CTA bar (V1/V3/V4 D 카테고리에서)
+function CTABar(F,w,h,pad,label,sz,bg,fg){
+  const cH=ctaH(sz);
+  const bar=R_(w,cH,bg,9999);
+  F.appendChild(bar);bar.x=0;bar.y=h-cH;
+  const t=TX(label,sz,HV,fg);F.appendChild(t);
+  // center text horizontally on bar
+  const tw=label.length*sz*CF;
+  t.x=Math.round((w-tw)/2);t.y=Math.round(h-cH+(cH-sz*1.15)/2);
+  // arrow
+  const ar=TX(' >',sz,HV,fg);F.appendChild(ar);ar.x=Math.round((w+tw)/2);ar.y=t.y;
+  return cH;
 }
 
 // ============================================================
-// 레이아웃 A — Wide Thin (≥2.5)
-// 좁은 띠 배너. 이미지 사용 안 함 (공간 부족) — 항상 오렌지 솔리드.
+// V별 색상 토큰 결정 헬퍼
 // ============================================================
-async function layA(F,w,h){
-  F.fills=fl(T.solid);
+function vColors(V, cat){
+  // returns {bg, headFg, subFg, ctaBg, ctaFg, logoWhite}
+  if(V==='V1') return {bg:T.white, headFg:T.text, subFg:T.muted, ctaBg:T.solid, ctaFg:T.white, logoWhite:false};
+  if(V==='V2') return {bg:T.solid, headFg:T.white, subFg:T.white, ctaBg:T.weak, ctaFg:T.text, logoWhite:true};
+  if(V==='V3') return {bg:T.weak,  headFg:T.text, subFg:T.muted, ctaBg:T.solid, ctaFg:T.white, logoWhite:false};
+  if(V==='V4'){
+    if(cat==='B') return {bg:T.solid, headFg:T.white, subFg:T.white, ctaBg:T.weak, ctaFg:T.text, logoWhite:true};
+    return {bg:T.white, headFg:T.solid, subFg:T.muted, ctaBg:T.solid, ctaFg:T.white, logoWhite:false};
+  }
+}
+
+// ============================================================
+// 레이아웃 A — Wide Thin (≥2.5)  ─  V1~V4
+// ============================================================
+async function layA(F,w,h,V){
+  const c=vColors(V,'A');
+  F.fills=fl(c.bg);
   const pad=Math.round(w*0.05);
+
+  if(V==='V3'){
+    // White card + 우측 brand-solid 정사각 → 박스
+    F.fills=fl(T.white);
+    const arrowBox=R_(h,h,T.solid);F.appendChild(arrowBox);arrowBox.x=w-h;arrowBox.y=0;
+    const ar=TX('→',Math.round(h*0.5),HV,T.white);F.appendChild(ar);ar.x=w-h+Math.round(h*0.28);ar.y=Math.round(h*0.18);
+    const logo=makeLogo(Math.round(h*0.36),false);
+    F.appendChild(logo);logo.x=pad;logo.y=Math.round((h-logo.height)/2);
+    const headLeft=logo.x+logo.width+Math.round(w*0.035);
+    const headMaxW=(w-h)-pad-headLeft;
+    const hSz=fitSize(HEAD,headMaxW,Math.round(h*0.20));
+    const hH=calcH(HEAD,hSz,headMaxW);
+    const head=TX(HEAD,hSz,HV,T.text,headMaxW);
+    F.appendChild(head);head.x=headLeft;head.y=Math.round((h-hH)/2);
+    return;
+  }
+
+  if(V==='V4'){
+    F.fills=fl(T.weak);
+    const logo=makeLogo(Math.round(h*0.36),false);
+    F.appendChild(logo);logo.x=pad;logo.y=Math.round((h-logo.height)/2);
+    const headLeft=logo.x+logo.width+Math.round(w*0.035);
+    const cW=Math.round(w*0.55)-headLeft;
+    const hSz=fitSize(HEAD,cW,Math.round(h*0.20));
+    const hH=calcH(HEAD,hSz,cW);
+    const head=TX(HEAD,hSz,HV,T.text,cW);
+    F.appendChild(head);head.x=headLeft;head.y=Math.round((h-hH)/2);
+    // 우측 끝 → arrow
+    const ar=TX('→',Math.round(h*0.36),HV,T.solid);F.appendChild(ar);ar.x=w-pad-Math.round(h*0.36);ar.y=Math.round(h*0.30);
+    // 우측 일러스트 슬롯 (placeholder, 사용자가 채움)
+    return;
+  }
+
+  // V1, V2 — Solid + Logo + Head + 우측 → arrow
   const logo=makeLogo(Math.round(h*0.36),true);
   F.appendChild(logo);logo.x=pad;logo.y=Math.round((h-logo.height)/2);
   const headLeft=logo.x+logo.width+Math.round(w*0.035);
-  const headMaxW=w-pad-headLeft;
-  const hSz=fitSize(HEAD_W,headMaxW,Math.round(h*0.36));
-  const hH=calcH(HEAD_W,hSz,headMaxW);
-  const head=TX(HEAD_W,hSz,HV,T.white,headMaxW);
+  const headMaxW=w-pad-headLeft-Math.round(h*0.40); // 우측 → 공간
+  const headText = (V==='V1') ? HEAD_W : HEAD;
+  const headPx   = (V==='V1') ? Math.round(h*0.36) : Math.round(h*0.20);
+  const hSz=fitSize(headText,headMaxW,headPx);
+  const hH=calcH(headText,hSz,headMaxW);
+  const head=TX(headText,hSz,HV,T.white,headMaxW);
   F.appendChild(head);head.x=headLeft;head.y=Math.round((h-hH)/2);
+  const ar=TX('→',Math.round(h*0.36),HV,T.white);F.appendChild(ar);ar.x=w-pad-Math.round(h*0.36);ar.y=Math.round(h*0.30);
 }
 
 // ============================================================
-// 레이아웃 B — Square (0.9~1.3)
+// 레이아웃 B — Square (0.9~1.3)  ─  V1~V4
 // ============================================================
-async function layB(F,w,h){
-  if(HAS_IMG){
-    F.fills=imageFill(IMG_HASH);
-    const topG=gradient(w,Math.round(h*0.30),true);F.appendChild(topG);topG.x=0;topG.y=0;
-    const botG=gradient(w,Math.round(h*0.55),false);F.appendChild(botG);botG.x=0;botG.y=h-Math.round(h*0.55);
-  }else{
-    F.fills=fl(T.weak);
-  }
+async function layB(F,w,h,V){
+  const c=vColors(V,'B');
+  F.fills=fl(c.bg);
   const pad=Math.round(Math.min(w,h)*0.075);
-  const logo=makeLogo(Math.round(h*0.085),HAS_IMG);
+  const logo=makeLogo(Math.round(h*0.085),c.logoWhite);
   F.appendChild(logo);logo.x=pad;logo.y=pad;
   const cW=w-pad*2;
-  const hSz=fitSize(HEAD,cW,Math.round(h*0.14));
-  const sSz=fitSize(SUB,cW,Math.round(h*0.048));
-  const cSz=Math.round(h*0.060);
+
+  if(V==='V4'){
+    // Solid + Bold-only (Sub/CTA 없음, 큰 헤드만)
+    const hSz=fitSize(HEAD,cW,Math.round(h*0.16));
+    const hH=calcH(HEAD,hSz,cW);
+    const head=TX(HEAD,hSz,HV,c.headFg,cW);
+    F.appendChild(head);head.x=pad;head.y=Math.round((h-hH)/2);
+    return;
+  }
+
+  if(V==='V2'){
+    // Solid Hero — 상단 큰 헤드, CTA/Sub 없음
+    const hSz=fitSize(HEAD,cW,Math.round(h*0.14));
+    const hH=calcH(HEAD,hSz,cW);
+    const head=TX(HEAD,hSz,HV,c.headFg,cW);
+    F.appendChild(head);head.x=pad;head.y=pad+Math.round(h*0.085)+Math.round(h*0.06);
+    return;
+  }
+
+  // V1, V3 — bottom stack (Head→Sub→CTA, bottom-up)
+  const hSz=fitSize(HEAD,cW,Math.round(h*0.11));
+  const sSz=fitSize(SUB,cW,Math.round(h*0.046));
+  const cSz=Math.round(h*0.058);
   const hH=calcH(HEAD,hSz,cW);
   const sH=calcH(SUB,sSz,cW);
   const cH=ctaH(cSz);
-  const tCol=HAS_IMG?T.white:T.text;
-  const sCol=HAS_IMG?T.white:T.muted;
-  const cta=CTA(CT,cSz);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
-  const sub=TX(SUB,sSz,BD,sCol,cW);F.appendChild(sub);sub.x=pad;sub.y=cta.y-Math.round(h*0.052)-sH;
-  const head=TX(HEAD,hSz,HV,tCol,cW);F.appendChild(head);head.x=pad;head.y=sub.y-Math.round(h*0.025)-hH;
+  const cta=CTA(CT,cSz,c.ctaBg,c.ctaFg);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
+  const sub=TX(SUB,sSz,BD,c.subFg,cW);F.appendChild(sub);sub.x=pad;sub.y=cta.y-Math.round(h*0.035)-sH;
+  const head=TX(HEAD,hSz,HV,c.headFg,cW);F.appendChild(head);head.x=pad;head.y=sub.y-Math.round(h*0.015)-hH;
 }
 
 // ============================================================
-// 레이아웃 C — Landscape (1.3~2.5)
-// 로고 충돌 방지: 헤드 폰트 사이즈를 가용 공간 안에서 동적 축소
+// 레이아웃 C — Landscape (1.3~2.5)  ─  V1~V4
 // ============================================================
-async function layC(F,w,h){
-  if(HAS_IMG){
-    F.fills=imageFill(IMG_HASH);
-    const topG=gradient(w,Math.round(h*0.35),true);F.appendChild(topG);topG.x=0;topG.y=0;
-    const botG=gradient(w,Math.round(h*0.65),false);F.appendChild(botG);botG.x=0;botG.y=h-Math.round(h*0.65);
-  }else{
-    F.fills=fl(T.weak);
-  }
+async function layC(F,w,h,V){
+  const c=vColors(V,'C');
+  F.fills=fl(c.bg);
   const pad=Math.round(h*0.08);
-  const logoH_px=Math.round(h*0.115);
-  const logo=makeLogo(logoH_px,HAS_IMG);
+  const logoH=Math.round(h*0.115);
+  const logo=makeLogo(logoH,c.logoWhite);
   F.appendChild(logo);logo.x=pad;logo.y=pad;
   const cW=Math.round(w*0.58);
-  const sSz=fitSize(SUB,cW,Math.round(h*0.060));
+
+  if(V==='V2'){
+    // Solid Hero — 좌측 헤드만, CTA 없음
+    const hSz=fitSize(HEAD,cW,Math.round(h*0.20));
+    const hH=calcH(HEAD,hSz,cW);
+    const head=TX(HEAD,hSz,HV,c.headFg,cW);
+    F.appendChild(head);head.x=pad;head.y=pad+logoH+Math.round(h*0.05);
+    return;
+  }
+
+  // V1, V3, V4 — 좌헤드(+sub/CTA)
+  const sSz=fitSize(SUB,cW,Math.round(h*0.058));
   const cSz=Math.round(h*0.072);
   const sH=calcH(SUB,sSz,cW);
   const cH=ctaH(cSz);
-  const logoBottom=pad+logoH_px+Math.round(h*0.05);
-  const availForStack=h-pad-logoBottom;
-  const fixedH=cH+Math.round(h*0.060)+sH+Math.round(h*0.038);
-  const maxHeadH=availForStack-fixedH;
-  let hSz=fitSize(HEAD,cW,Math.round(h*0.20));
-  let hH=calcH(HEAD,hSz,cW);
-  while(hH>maxHeadH&&hSz>10){hSz--;hH=calcH(HEAD,hSz,cW);}
-  const tCol=HAS_IMG?T.white:T.text;
-  const sCol=HAS_IMG?T.white:T.muted;
-  const cta=CTA(CT,cSz);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
-  const sub=TX(SUB,sSz,BD,sCol,cW);F.appendChild(sub);sub.x=pad;sub.y=cta.y-Math.round(h*0.060)-sH;
-  const head=TX(HEAD,hSz,HV,tCol,cW);F.appendChild(head);head.x=pad;head.y=sub.y-Math.round(h*0.038)-hH;
-}
 
-// ============================================================
-// 레이아웃 D — Portrait (<0.9)
-// ============================================================
-async function layD(F,w,h){
-  if(HAS_IMG){
-    F.fills=imageFill(IMG_HASH);
-    const topG=gradient(w,Math.round(h*0.20),true);F.appendChild(topG);topG.x=0;topG.y=0;
-    const botG=gradient(w,Math.round(h*0.45),false);F.appendChild(botG);botG.x=0;botG.y=h-Math.round(h*0.45);
-  }else{
-    F.fills=fl(T.weak);
+  if(V==='V1' || V==='V4'){
+    // 풀와이드 하단 CTA bar
+    const cta=CTA(CT,cSz,c.ctaBg,c.ctaFg);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
+    const headPx=(V==='V4')?Math.round(h*0.18):Math.round(h*0.20);
+    let hSz=fitSize(HEAD,cW,headPx);
+    let hH=calcH(HEAD,hSz,cW);
+    const maxHeadH=h-pad-logoH-Math.round(h*0.05)-cH-Math.round(h*0.05)-pad;
+    while(hH>maxHeadH&&hSz>10){hSz--;hH=calcH(HEAD,hSz,cW);}
+    const head=TX(HEAD,hSz,HV,c.headFg,cW);F.appendChild(head);head.x=pad;head.y=pad+logoH+Math.round(h*0.05);
+    return;
   }
-  const pad=Math.round(w*0.065);
-  const logo=makeLogo(Math.round(h*0.055),HAS_IMG);
-  F.appendChild(logo);logo.x=pad;logo.y=pad;
-  const cW=w-pad*2;
-  const hSz=fitSize(HEAD,cW,Math.round(h*0.10));
-  const sSz=fitSize(SUB,cW,Math.round(h*0.040));
-  const cSz=Math.round(h*0.048);
-  const hH=calcH(HEAD,hSz,cW);
-  const sH=calcH(SUB,sSz,cW);
-  const cH=ctaH(cSz);
-  const tCol=HAS_IMG?T.white:T.text;
-  const sCol=HAS_IMG?T.white:T.muted;
-  const cta=CTA(CT,cSz);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
-  const sub=TX(SUB,sSz,BD,sCol,cW);F.appendChild(sub);sub.x=pad;sub.y=cta.y-Math.round(h*0.042)-sH;
-  const head=TX(HEAD,hSz,HV,tCol,cW);F.appendChild(head);head.x=pad;head.y=sub.y-Math.round(h*0.022)-hH;
+
+  // V3 — bottom stack (기존 Weak)
+  const cta=CTA(CT,cSz,c.ctaBg,c.ctaFg);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
+  const sub=TX(SUB,sSz,BD,c.subFg,cW);F.appendChild(sub);sub.x=pad;sub.y=cta.y-Math.round(h*0.05)-sH;
+  let hSz=fitSize(HEAD,cW,Math.round(h*0.14));
+  let hH=calcH(HEAD,hSz,cW);
+  const head=TX(HEAD,hSz,HV,c.headFg,cW);F.appendChild(head);head.x=pad;head.y=sub.y-Math.round(h*0.025)-hH;
 }
 
 // ============================================================
-// Claude Area 페이지에 컨테이너 frame으로 배치 (전역 규칙)
-// ~/.claude/CLAUDE.md 의 "Figma 작업 규칙" 적용
-// 같은 날(YYMMDD): 옆에 / 다른 날: 아래 새 행
+// 레이아웃 D — Portrait (<0.9)  ─  V1~V4
+// ============================================================
+async function layD(F,w,h,V){
+  const c=vColors(V,'D');
+  F.fills=fl(c.bg);
+  const pad=Math.round(w*0.065);
+  const logoH=Math.round(h*0.055);
+  // V1/V2/V4 — 상단 가운데 로고
+  const logoCenter=(V==='V1'||V==='V2'||V==='V4');
+  const logo=makeLogo(logoH,c.logoWhite);
+  F.appendChild(logo);
+  if(logoCenter){
+    logo.x=Math.round((w-logo.width)/2);logo.y=pad;
+  }else{
+    logo.x=pad;logo.y=pad;
+  }
+  const cW=w-pad*2;
+  const cSz=Math.round(h*0.048);
+  const cH=ctaH(cSz);
+  const sSz=fitSize(SUB,cW,Math.round(h*0.032));
+  const sH=calcH(SUB,sSz,cW);
+
+  // 모든 V (Portrait)는 풀와이드 하단 CTA bar (V2는 weak bg, V1/V3/V4는 solid)
+  const cta=CTA(CT,cSz,c.ctaBg,c.ctaFg);F.appendChild(cta);cta.x=pad;cta.y=h-pad-cH;
+
+  if(V==='V3'){
+    // Sub 포함 (Weak Stack)
+    const sub=TX(SUB,sSz,BD,c.subFg,cW);F.appendChild(sub);sub.x=pad;sub.y=pad+logoH+Math.round(h*0.04);
+    let hSz=fitSize(HEAD,cW,Math.round(h*0.08));
+    let hH=calcH(HEAD,hSz,cW);
+    // V3는 좌상 로고 + 상단 Head + 하단 sub. 단순화: 상단 스택
+    const head=TX(HEAD,hSz,HV,c.headFg,cW);F.appendChild(head);head.x=pad;head.y=pad+logoH+Math.round(h*0.04);
+    sub.y=head.y+hH+Math.round(h*0.015);
+    return;
+  }
+
+  // V1, V2, V4 — 상단 헤드 (Sub 없음)
+  const headPx=(V==='V2')?Math.round(h*0.10):(V==='V4'?Math.round(h*0.09):Math.round(h*0.08));
+  const hSz=fitSize(HEAD,cW,headPx);
+  const hH=calcH(HEAD,hSz,cW);
+  const head=TX(HEAD,hSz,HV,c.headFg,cW);
+  F.appendChild(head);head.x=pad;head.y=pad+logoH+Math.round(h*0.04);
+}
+
+// ============================================================
+// 카테고리 → 빌더 매핑
+// ============================================================
+const BUILDERS={A:layA,B:layB,C:layC,D:layD};
+
+// ============================================================
+// Claude Area 페이지에 컨테이너 frame으로 배치
 // ============================================================
 const CLAUDE_AREA_ID='8297:11349';
 const pg=figma.getNodeById(CLAUDE_AREA_ID);
@@ -254,7 +360,6 @@ await figma.setCurrentPageAsync(pg);
 const _d=new Date();
 const yymmdd=_d.getFullYear().toString().slice(2)+String(_d.getMonth()+1).padStart(2,'0')+String(_d.getDate()).padStart(2,'0');
 
-// PAGE_NAME을 컨테이너 이름으로 사용. 같은 이름 있으면 재사용(재실행), 없으면 신규 + 위치 계산.
 let container=pg.children.find(c=>c.name===PAGE_NAME);
 if(container){
   [...container.children].forEach(c=>{try{c.remove();}catch(e){}});
@@ -286,54 +391,31 @@ if(needsFontNote){
 }
 
 // ============================================================
-// 10개 배너 생성 (몰로코 기본 세트) — 컨테이너 내부에 배치
+// 40 프레임 생성 (사이즈 행 × V1~V4 열)
 // ============================================================
-const B=[
-  ['배너 320×100',320,100,layA],
-  ['미디엄 300×250',300,250,layB],
-  ['미디엄 720×720',720,720,layB],
-  ['풀스크린 480×320',480,320,layC],
-  ['네이티브 1200×600',1200,600,layC],
-  ['풀스크린 320×480',320,480,layD],
-  ['네이티브 720×960',720,960,layD],
-  ['태블릿 768×1024',768,1024,layD],
-  ['네이티브 720×1280',720,1280,layD],
-  ['네이티브 1200×1500',1200,1500,layD],
-];
-
-let cx=0,cy=0,rh=0;
-const GAP=120,RMAX=3600;
-let maxX=0,maxY=0;
-for(const [n,w,h,fn] of B){
-  if(cx+w>RMAX){cy+=rh+GAP;cx=0;rh=0;}
-  const F=F_(n,w,h,T.white);
-  container.appendChild(F); // 컨테이너 내부
-  F.x=cx;F.y=cy;
-  await fn(F,w,h);
-  if(cx+w>maxX)maxX=cx+w;
-  if(cy+h>maxY)maxY=cy+h;
-  cx+=w+GAP;rh=Math.max(rh,h);
+const COL_GAP=80, ROW_GAP=160;
+let cy=0,maxX=0;
+const created=[];
+for(const sz of SIZES){
+  let cx=0;
+  for(const V of VARIANTS){
+    const F=F_(`${sz.w}×${sz.h}_${V}`, sz.w, sz.h, T.white);
+    container.appendChild(F);
+    F.x=cx;F.y=cy;
+    await BUILDERS[sz.cat](F, sz.w, sz.h, V);
+    created.push(F);
+    cx += sz.w + COL_GAP;
+  }
+  if(cx>maxX) maxX=cx;
+  cy += sz.h + ROW_GAP;
 }
-
-// 컨테이너 크기를 컨텐츠에 맞춤
-container.resize(Math.max(maxX,1),Math.max(maxY,1));
+container.resize(Math.max(maxX,1), Math.max(cy,1));
 
 figma.viewport.scrollAndZoomIntoView([container]);
-figma.notify(`✅ ${PAGE_NAME} · ${HAS_IMG?'이미지':'기본'} · ${FAM}`);
-return `OK · ${PAGE_NAME} @ Claude Area (${container.x},${container.y})`;
+figma.currentPage.selection = created;
+figma.notify(`✅ ${PAGE_NAME} · 40 프레임 (10 × V1~V4) · ${FAM}`);
+return `OK · ${PAGE_NAME} @ Claude Area · ${created.length} frames`;
 ```
-
----
-
-## 이미지 사용 워크플로우
-
-1. Figma 파일에 `assets` 페이지를 만든다 (없으면 생성)
-2. 그 페이지에 프레임 추가, 이름은 `img_<key>` (예: `img_노트북_데스크`)
-3. 프레임에 이미지를 drag & drop (이미지 fill로 적용됨)
-4. 제너레이터의 `IMAGE_ASSET = 'img_노트북_데스크'`로 지정
-5. 실행하면 자동으로 그 imageHash를 모든 배너 배경에 적용
-
-이미지 없으면 (`IMAGE_ASSET = ''`) 기본 weak 배경으로 폴백.
 
 ---
 
@@ -346,7 +428,6 @@ const HEAD='비싼 노트북,\n이웃이 살게요';
 const HEAD_W='이웃이 살게요 →';
 const SUB='우리 동네 이웃과 당근에서 직거래';
 const CT='당근 열기';
-const IMAGE_ASSET='img_노트북_데스크'; // 사용자가 미리 업로드한 이미지
 ```
 
 ### 당근페이 송금
@@ -356,7 +437,6 @@ const HEAD='계좌번호 없이\n이름만으로 송금';
 const HEAD_W='이름만으로 송금 →';
 const SUB='직거래 후 바로 당근페이로';
 const CT='당근페이 쓰기';
-const IMAGE_ASSET='';
 ```
 
 ---
@@ -366,5 +446,5 @@ const IMAGE_ASSET='';
 2. 헤드 프레임 밖으로 → `fitSize` 적용 확인
 3. CTA 겹침 → bottom-up 스태킹 순서 확인 (`cta → sub → head`)
 4. 로고 이모지 → `importComponentByKeyAsync` 호출 확인
-5. 이미지 미적용 → `assets` 페이지 + `img_<name>` 프레임 + 이미지 fill 존재 확인
-6. Karrot Sans 미로드 → `hasKarrot` 플래그 + 노란 경고 노트 확인
+5. Karrot Sans 미로드 → `hasKarrot` 플래그 + 노란 경고 노트 확인
+6. V2(Solid) 위 헤드 잘림 → headPx 비율 (`h × 0.14` B / `h × 0.20` C / `h × 0.10` D) 재확인

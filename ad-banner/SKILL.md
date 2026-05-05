@@ -88,21 +88,21 @@ description: |
 | `references/foundation-typography.md` | 폰트 크기·행간·자간 — fitSize·calcH 수식 근거 |
 | `references/foundation-logo.md` | 로고 컴포넌트 키 + 비율별 크기 |
 | `references/copy-library.md` | 캠페인별 헤드/서브/CTA 후보 |
-| `references/layout-spec.md` | 비율별(A/B/C/D) 레이아웃 구조 |
-| `references/figma-generator.md` | Figma 생성 코드 템플릿 |
+| `references/layout-spec.md` | 사이즈별 레이아웃 인덱스 (락 10종 → layouts/{w}x{h}.md 매핑, V1~V4 골격, 카테고리 공식) |
+| `references/layouts/{w}x{h}.md` | 락 10종 각각의 V1~V4 변형 가이드 (배경·구조·CTA·비율) |
+| `references/figma-generator.md` | Figma 생성 코드 템플릿 (사이즈 × V1~V4 = 40 프레임 자동 생성) |
 | `references/quality-checklist.md` | 출력 전 자가 검증 |
 
 ---
 
-## 기본 사이즈 세트
+## 기본 사이즈 세트 — 확정 락 10종
 
-**몰로코 (기본):** 320×100 / 300×250 / 720×720 / 480×320 / 1200×600 / 320×480 / 720×960 / 768×1024 / 720×1280 / 1200×1500
+**락 (사용자 직접 수정 요청 없이 변경 금지):**
+320×100 / 300×250 / 320×480 / 480×320 / 768×1024 / 720×720 / 720×960 / 720×1280 / 1200×628 / 1200×1600
 
-**구글:** 300×250 / 728×90 / 160×600 / 300×600 / 970×250
+각 사이즈마다 V1~V4 = 4개 시안. 1회 실행 = **10 × 4 = 40 프레임** 자동 생성.
 
-**메타:** 1080×1080 / 1200×628 / 1080×1920
-
-레이아웃 함수: `layA` Wide Thin(≥2.5) / `layB` Square(0.9~1.3) / `layC` Landscape(1.3~2.5) / `layD` Portrait(<0.9)
+레이아웃 카테고리: `layA` Wide Thin(≥2.5) / `layB` Square(0.9~1.3) / `layC` Landscape(1.3~2.5) / `layD` Portrait(<0.9). 각 카테고리는 V1(White Card) / V2(Solid Hero) / V3(Weak Stack) / V4(Color-emphasis or Bold-only) 변형을 가짐. 사이즈→md 매핑은 `references/layout-spec.md`.
 
 ---
 

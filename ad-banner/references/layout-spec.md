@@ -1,147 +1,73 @@
-# 레이아웃 스펙 — 비율별 검증된 패턴
+# 레이아웃 스펙 — 인덱스
 
-같은 비율은 같은 레이아웃 함수 + 스케일 조정으로 일관성 유지.
+확정 사이즈는 락 10종(아래 표). 각 사이즈마다 검증된 변형 V1~V4가 별도 md에 있다.
+
+레이아웃 함수는 비율 카테고리(A/B/C/D)로 그루핑하고, 변형(V1~V4)은 같은 카테고리 안에서 배경/구조/CTA 유무가 다르다.
 
 ---
 
-## 비율 기준 레이아웃 선택
+## 사이즈 → md 매핑
 
-| 비율 w/h | 카테고리 | 레이아웃 | 예시 사이즈 |
+| 사이즈 | 비율 | 카테고리 | 가이드 |
 |---|---|---|---|
-| ≥ 2.5 | Wide Thin | A | 320×100 (3.2:1) |
-| 1.3 ~ 2.5 | Landscape | C | 480×320 (1.5:1), 1200×600 (2:1) |
-| 0.9 ~ 1.3 | Square-ish | B | 300×250 (1.2:1), 720×720 (1:1) |
-| < 0.9 | Portrait | D | 320×480, 720×960, 768×1024, 720×1280, 1200×1500 |
+| 320×100 | 3.2:1 | A (Wide Thin) | [layouts/320x100.md](./layouts/320x100.md) |
+| 300×250 | 1.2:1 | B (Square-ish) | [layouts/300x250.md](./layouts/300x250.md) |
+| 720×720 | 1:1 | B (Square) | [layouts/720x720.md](./layouts/720x720.md) |
+| 480×320 | 1.5:1 | C (Landscape) | [layouts/480x320.md](./layouts/480x320.md) |
+| 1200×628 | 1.91:1 | C (Landscape Wide) | [layouts/1200x628.md](./layouts/1200x628.md) |
+| 320×480 | 2:3 | D (Portrait) | [layouts/320x480.md](./layouts/320x480.md) |
+| 720×960 | 3:4 | D (Portrait) | [layouts/720x960.md](./layouts/720x960.md) |
+| 768×1024 | 3:4 | D (Portrait Tall) | [layouts/768x1024.md](./layouts/768x1024.md) |
+| 720×1280 | 9:16 | D (Tall Portrait) | [layouts/720x1280.md](./layouts/720x1280.md) |
+| 1200×1600 | 3:4 | D (Portrait Large) | [layouts/1200x1600.md](./layouts/1200x1600.md) |
+
+> 락 10종은 SKILL.md "기본 사이즈 세트"와 동일. 사용자 직접 수정 요청 없이 변경 금지.
 
 ---
 
-## 🟧 Layout A — Wide Thin
+## 변형 골격 (V1~V4 공통 정의)
 
-**용도:** 모바일 배너 (320×100)  
-**배경:** `$color.bg.brand-solid` (오렌지)  
-**구조:** [Logo] — [Head] — (empty)  
-**모든 요소 세로 가운데 정렬**
+같은 사이즈 안에서 V1~V4는 배경·구조·CTA 유무가 다르다. 비율 공식은 카테고리(A/B/C/D)에 따라 결정되고, V는 그 위에 얹는 스타일.
 
-### 요소별 수치
-| 요소 | 계산 | 근거 |
-|---|---|---|
-| Padding | `w × 0.05` | 좌우 safe zone |
-| Logo 높이 | `h × 0.36` | 브랜드 식별 + 비율 |
-| Logo 색상 | `Color=White` | 오렌지 배경 대비 |
-| Head-Logo gap | `w × 0.035` | 시각 분리 |
-| Head 폰트 | `fitSize(HEAD_W, maxW, h × 0.2)` | 1줄 수용 |
-| Head 색상 | `$color.fg.neutral-inverted` (white) | 오렌지 위 |
-| CTA | 없음 | Wide thin은 전체가 클릭 영역 |
+| V | 배경 | 헤드 위치 | CTA | 일러스트 |
+|---|---|---|---|---|
+| V1 | 흰색 (`bg.neutral`) | 상단 / 좌측 (사이즈에 따라) | 풀와이드 하단 `bg.brand-solid` 버튼 (`$radius.full`) | 가운데 또는 우측 |
+| V2 | `bg.brand-solid` | 상단 / 좌측 | 없음 또는 작은 `bg.brand-weak` 인라인 | 가운데 또는 우측 (캐릭터 위주) |
+| V3 | `bg.brand-weak` | 좌상 로고 + 텍스트 스택 | 스택 안 인라인 또는 풀와이드 (사이즈) | 가운데 또는 우측 |
+| V4 | 흰색 또는 `bg.brand-solid` | 헤드 강조 (키워드 1~2개를 `fg.brand-solid`) | 풀와이드 또는 없음 | 가운데 |
 
-### 헤드카피 규칙
-- 1줄만
-- 6~10자
-- 뒤에 `→` 붙이기 (행동 유도)
+> 320×100(A 카테고리)은 공간 부족으로 별도 변형 정의 — `layouts/320x100.md` 참조.
 
 ---
 
-## 🟨 Layout B — Square-ish
+## 카테고리별 비율 공식 (foundation-spacing 환산)
 
-**용도:** 미디엄 배너 (300×250, 720×720)  
-**배경:** `$color.bg.brand-weak`  
-**구조:** Logo 좌상 + 장식원 우하 + 하단 스택 (Head→Sub→CTA)
+| 카테고리 | Padding | Logo h | Head 폰트 | Sub 폰트 | CTA 폰트 | 컨텐츠 너비 cW |
+|---|---|---|---|---|---|---|
+| A (Wide Thin, ≥2.5) | `w × 0.05` | `h × 0.36` | `fitSize(HEAD, mw, h × 0.20)` | — | — | `w − pad − logo − gap` |
+| B (Square, 0.9~1.3) | `min(w,h) × 0.075` | `h × 0.085` | `fitSize(HEAD, cW, h × 0.11)` | `fitSize(SUB, cW, h × 0.046)` | `h × 0.058` | `w − pad × 2` |
+| C (Landscape, 1.3~2.5) | `h × 0.08` | `h × 0.115` | `fitSize(HEAD, cW, h × 0.14)` | `fitSize(SUB, cW, h × 0.058)` | `h × 0.072` | `w × 0.58` |
+| D (Portrait, <0.9) | `w × 0.065` | `h × 0.055` | `fitSize(HEAD, cW, h × 0.08)` | `fitSize(SUB, cW, h × 0.032)` | `h × 0.048` | `w − pad × 2` |
 
-### 요소별 수치
-| 요소 | 계산 |
-|---|---|
-| Padding | `min(w,h) × 0.075` |
-| 장식원 크기 | `w × 0.8` |
-| 장식원 위치 | `(w×0.48, h×0.4)` — 우하단 잘림 |
-| 장식원 opacity | `0.1` |
-| Logo 높이 | `h × 0.085` |
-| Logo 색상 | Primary (오렌지) |
-| Head 폰트 | `fitSize(HEAD, cW, h × 0.11)` |
-| Sub 폰트 | `fitSize(SUB, cW, h × 0.046)` |
-| CTA 폰트 | `h × 0.058` |
-| Head-Sub gap | `h × 0.015` |
-| Sub-CTA gap | `h × 0.035` |
-
-### 배치 로직 (bottom-up)
-```
-cta.y = h - pad - ctaH(cSz)
-sub.y = cta.y - gap_sc - calcH(SUB, sSz, cW)
-head.y = sub.y - gap_hs - calcH(HEAD, hSz, cW)
-```
+gap 표준:
+- B/D: H↔S `h × 0.015`, S↔C `h × 0.03~0.035`
+- C: H↔S `h × 0.025`, S↔C `h × 0.05`, Logo↔Stack `h × 0.05`
 
 ---
 
-## 🟩 Layout C — Landscape
+## 출력 기대치
 
-**용도:** 풀스크린 가로·네이티브 와이드 (480×320, 1200×600)  
-**배경:** `$color.bg.brand-weak`  
-**구조:** Logo 좌상 + 큰 장식원 우측 잘림 + 좌측 스택 (Head→Sub→CTA)
-
-### 요소별 수치
-| 요소 | 계산 |
-|---|---|
-| Padding | `h × 0.08` |
-| 장식원 크기 | `h × 1.3` (프레임 밖으로 튀어나옴, clipsContent=true) |
-| 장식원 위치 | `(w - h×0.88, -h×0.28)` — 우상단 |
-| 장식원 opacity | `0.1` |
-| Logo 높이 | `h × 0.115` |
-| 컨텐츠 너비 `cW` | `w × 0.58` (좌측 58%) |
-| Head 폰트 | `fitSize(HEAD, cW, h × 0.14)` |
-| Sub 폰트 | `fitSize(SUB, cW, h × 0.058)` |
-| CTA 폰트 | `h × 0.07` |
-| Head-Sub gap | `h × 0.025` |
-| Sub-CTA gap | `h × 0.05` |
+스킬 1회 실행 = 락 10종 × V1~V4 = **40 프레임**이 한 컨테이너에 자동 생성. 사이즈마다 한 행에 V1→V4 가로 배치, 사이즈는 세로로 누적.
 
 ---
 
-## 🟦 Layout D — Portrait
-
-**용도:** 모든 세로형 (320×480, 720×960, 768×1024, 720×1280, 1200×1500)  
-**배경:** `$color.bg.brand-weak`  
-**구조:** Logo 좌상 + 큰 장식원 상단 (원 반쪽만 보임) + 하단 스택
-
-### 요소별 수치
-| 요소 | 계산 |
-|---|---|
-| Padding | `w × 0.065` |
-| 장식원 크기 | `w × 1.0` |
-| 장식원 위치 | `(-w×0.02, h×0.15)` |
-| 장식원 opacity | `0.1` |
-| Logo 높이 | `h × 0.055` |
-| 컨텐츠 너비 `cW` | `w - pad×2` |
-| Head 폰트 | `fitSize(HEAD, cW, h × 0.08)` |
-| Sub 폰트 | `fitSize(SUB, cW, h × 0.032)` |
-| CTA 폰트 | `h × 0.038` |
-| Head-Sub gap | `h × 0.015` |
-| Sub-CTA gap | `h × 0.03` |
-
----
-
-## 📊 수치의 근거
-
-### 왜 `fitSize`로 크기 자동 조정?
-- 헤드카피 길이가 캠페인마다 다름
-- 같은 비율이라도 사이즈 작은 banner는 더 작은 폰트 필요
-- 고정 비율 (h × 0.11 등)만 쓰면 wraps 발생 → 겹침
-
-### 왜 bottom-up 스태킹?
-- CTA가 항상 하단 고정 (안전 영역, 즉 "행동 유도")
-- Sub는 CTA 바로 위 (읽기 자연스러움)
-- Head는 가장 위 (시각 계층)
-
-### 왜 장식원 opacity 0.1?
-- 브랜드 컬러 존재감은 살리되 텍스트 가독성 방해 없음
-
----
-
-## ⚠️ 레이아웃 실패 체크
-
-각 배너 생성 후 screenshot으로 검증:
+## 레이아웃 실패 체크 (생성 후 screenshot 검증)
 
 - [ ] 헤드가 프레임 안에 완전히 들어감 (잘림 없음)
-- [ ] 헤드-서브-CTA 간 겹침 없음
-- [ ] 로고와 스택 간 겹침 없음
-- [ ] 장식원이 텍스트 가독성 해치지 않음
+- [ ] 헤드↔서브↔CTA 겹침 없음
+- [ ] 로고와 스택 겹침 없음
 - [ ] 좌우 pad 균등
 - [ ] CTA가 시각적으로 "버튼"으로 인식됨
+- [ ] V2/V4의 큰 헤드가 cW 밖으로 튀어나오지 않음
 
-하나라도 실패하면 해당 레이아웃 파라미터 재조정.
+하나라도 실패하면 해당 사이즈/V의 비율 파라미터 재조정.
