@@ -1,92 +1,73 @@
 # 레이아웃 스펙 — 인덱스
 
-확정 사이즈는 락 10종(아래 표). 각 사이즈는 비율 카테고리(A/B/C/D)에 속하고, 같은 카테고리 안에서 V1~V4 시안이 같은 비율 데이터를 공유한다.
+확정 사이즈는 락 10종(아래 표). 각 사이즈마다 시안 개수가 다르며, 시안 = Figma `learning Area`(8605:3281)의 화이트리스트 프레임 1개. **모든 검증된 디자인을 그대로 보존**한다 (압축·일반화 금지).
 
-V1~V4는 단순 색 변형이 아니라 **헤드/로고/CTA 위치가 모두 다른 4가지 배치**다. 비율 데이터는 Figma `learning Area`의 검증된 4개 캠페인(Moloco, PickUp, baro_running, image_jobs)에서 추출.
-
-좌표·비율 데이터는 `figma-generator.md`의 `TPL` 객체에 보존된다. 각 사이즈 md는 시안의 추상 특징만 기록한다.
+좌표는 코드에 하드코딩하지 않는다. 매 실행마다 `learning Area`에서 동적 추출. 디자이너가 새 디자인을 learning Area에 추가하면 자동 반영.
 
 ---
 
-## 사이즈 → md 매핑
+## 사이즈별 시안 수
 
-| 사이즈 | 비율 | 카테고리 | 가이드 |
+| 사이즈 | 비율 | 시안 수 | 가이드 |
 |---|---|---|---|
-| 320×100 | 3.2:1 | A (Wide Thin) | [layouts/320x100.md](./layouts/320x100.md) |
-| 300×250 | 1.2:1 | B (Square-ish) | [layouts/300x250.md](./layouts/300x250.md) |
-| 720×720 | 1:1 | B (Square) | [layouts/720x720.md](./layouts/720x720.md) |
-| 480×320 | 1.5:1 | C (Landscape) | [layouts/480x320.md](./layouts/480x320.md) |
-| 1200×628 | 1.91:1 | C (Landscape Wide) | [layouts/1200x628.md](./layouts/1200x628.md) |
-| 320×480 | 2:3 | D (Portrait) | [layouts/320x480.md](./layouts/320x480.md) |
-| 720×960 | 3:4 | D (Portrait) | [layouts/720x960.md](./layouts/720x960.md) |
-| 768×1024 | 3:4 | D (Portrait Tall) | [layouts/768x1024.md](./layouts/768x1024.md) |
-| 720×1280 | 9:16 | D (Tall Portrait) | [layouts/720x1280.md](./layouts/720x1280.md) |
-| 1200×1600 | 3:4 | D (Portrait Large) | [layouts/1200x1600.md](./layouts/1200x1600.md) |
+| 320×100 | 3.2:1 | 13 | [layouts/320x100.md](./layouts/320x100.md) |
+| 300×250 | 1.2:1 | 7 | [layouts/300x250.md](./layouts/300x250.md) |
+| 720×720 | 1:1 | 5 | [layouts/720x720.md](./layouts/720x720.md) |
+| 480×320 | 1.5:1 | 11 | [layouts/480x320.md](./layouts/480x320.md) |
+| 1200×628 | 1.91:1 | 16 | [layouts/1200x628.md](./layouts/1200x628.md) |
+| 320×480 | 2:3 | 10 | [layouts/320x480.md](./layouts/320x480.md) |
+| 720×960 | 3:4 | 5 | [layouts/720x960.md](./layouts/720x960.md) |
+| 768×1024 | 3:4 | 11 | [layouts/768x1024.md](./layouts/768x1024.md) |
+| 720×1280 | 9:16 | 18 | [layouts/720x1280.md](./layouts/720x1280.md) |
+| 1200×1600 | 3:4 | 2 | [layouts/1200x1600.md](./layouts/1200x1600.md) |
+
+총 98개 시안.
 
 ---
 
-## CTA 룰
+## 절대 룰
 
-- 버튼형 CTA가 헤드/서브와 같은 stack 안 → **inline pill** (텍스트 stack 좌측 정렬, 같은 폭)
-- 헤드/서브와 떨어져 있음 → **풀와이드 bar** (가로형 320×100은 우측 세로 풀-하이트 bar로 변형, 폭 ~10%)
-- 두 형태가 한 디자인에서 섞이지 않음
+### CTA
+- **무조건 프레임 하단 풀와이드 bar** (또는 CTA 없음)
+- `(x=0, y=H-barH, w=W, h=barH)` 형태로 정규화
+- 우측 세로 bar / 인라인 pill / 가운데 띄움 등 모두 금지
+- 원본 디자인의 CTA 위치는 룰에 맞춰 정규화. 헤드/로고 좌표만 원본 보존
 
-검증된 데이터에서 inline pill은 거의 등장하지 않고, 모든 CTA는 bar 형태 또는 CTA 없음(Solid Hero).
+### 색상 (테스트 모드)
+- 배경: `bg.neutral` (흰색)
+- 헤드/서브: `fg.neutral` (검정)
+- CTA bar: `bg.brand-solid` (오렌지)
+- CTA 텍스트: `fg.neutral-inverted` (흰색)
+- **색으로 시안을 구분하지 않음**. 단색에서 layout 차이만 보여야 진짜 다양성
 
----
-
-## 카테고리별 V1~V4 (요약)
-
-### A — Wide Thin (320×100)
-- V1: Solid 텍스트만 (CTA 없음)
-- V2: Weak + 좌 로고 + 우측 세로 bar
-- V3: White + 좌 로고 + 우측 세로 bar
-- V4: Weak + 강조 헤드 + 우측 세로 bar
-
-### B — Square-ish (300×250, 720×720)
-- V1: Solid + 라벨 + 큰 헤드 (CTA 없음)
-- V2: White + 좌상 로고 + 풀와이드 하단 bar
-- V3: Weak + 헤드만 + 좌하 로고 (CTA 없음)
-- V4: White + 좌상 로고 + 강조 헤드 + 풀와이드 하단 bar
-
-### C — Landscape (480×320, 1200×628)
-- V1: Solid + 좌헤드 3줄 + 풀와이드 하단 bar
-- V2: White + 좌하 로고 + 좌헤드 + 풀와이드 하단 bar
-- V3: Weak + 우상 로고 + 좌헤드 + 풀와이드 하단 bar
-- V4: White + 좌상 로고 + 강조 헤드 + 풀와이드 하단 bar
-
-### D — Portrait (5개 사이즈)
-- V1: Solid + 상단 헤드 3줄 + 풀와이드 하단 bar
-- V2: White + 가운데 상단 로고 + 헤드 + 풀와이드 하단 bar
-- V3: Weak + 가운데 상단 로고 + 헤드 + 풀와이드 하단 bar
-- V4: White + 가운데 상단 로고 + 강조 헤드 + 풀와이드 하단 bar
+### 다양성
+- 시안 = 검증된 프레임 1개 = 시안 1개. 압축/dedupe 금지
+- V1/V2... 라벨링은 단순 인덱싱. 색·BG로 위장하는 가짜 변형 금지
+- 같은 사이즈의 모든 시안은 헤드/로고 좌표가 진짜 달라야 인정
 
 ---
 
-## 데이터 출처
+## 자동 데이터 추출
 
-비율 데이터는 다음 캠페인에서 추출 (각 사이즈마다 4개 다른 캠페인):
-- Moloco_Static / Native (당근비즈니스 어워즈)
-- google_GDN_Static (이벤트성)
-- img_PickUpMonthlyPromo_v1
-- baro_running
-- image_jobs_review/nearby/new semester
-- image_realty_honey/reliable_tenant
-
-색은 SEED 토큰(`bg.brand-solid` / `bg.brand-weak` / `bg.neutral` / `fg.neutral` / `fg.neutral-inverted` / `fg.brand-solid`)으로 일반화. 원본의 검정 배경, 일러스트 색 등은 무시 — 위치와 크기만 보존.
+`figma-generator.md`의 코드는 매 실행 시:
+1. `learning Area`(8605:3281) 자식 프레임을 사이즈로 그룹화
+2. 각 프레임에서 헤드(가장 큰 TEXT 또는 Copy INSTANCE), 로고(`Logo_*` 이름), CTA(`CTA Button` 이름 또는 하단 풀와이드 RECTANGLE)를 휴리스틱으로 식별
+3. CTA를 하단 풀와이드 bar로 정규화
+4. 새 카피만 그 위치/영역에 fitSize로 맞춰 출력
 
 ---
 
 ## 출력 기대치
 
-스킬 1회 실행 = 락 10종 × V1~V4 = **40 프레임**이 한 컨테이너에 자동 생성. 사이즈마다 한 행에 V1→V4 가로 배치, 사이즈는 세로로 누적.
+스킬 1회 실행 = **모든 화이트리스트 시안**(현재 98개)이 한 컨테이너에 사이즈별로 행 정렬되어 자동 생성.
 
 ---
 
-## 레이아웃 실패 체크 (생성 후 screenshot 검증)
+## 검증 체크리스트
 
-- [ ] 헤드가 프레임 안에 완전히 들어감 (잘림 없음)
-- [ ] CTA bar 위 텍스트가 가운데 정렬됨
-- [ ] 로고와 헤드/CTA 겹침 없음
-- [ ] V1~V4가 같은 사이즈 안에서 배치가 진짜 다름 (단순 색 변형 아님)
-- [ ] 우측 세로 bar (A 카테고리)가 cornerRadius=0으로 깔끔
+- [ ] 각 시안의 헤드 좌표가 `learning Area` 원본과 동일 (±1px)
+- [ ] 모든 CTA가 프레임 하단 풀와이드 bar 형태
+- [ ] 같은 사이즈 안에서 헤드 위치가 서로 진짜 다름 (단순 색 변형 아님)
+- [ ] 헤드 텍스트가 CTA bar와 겹치지 않음
+- [ ] 로고와 헤드가 겹치지 않음
+- [ ] 시안 수가 화이트리스트 수와 정확히 일치

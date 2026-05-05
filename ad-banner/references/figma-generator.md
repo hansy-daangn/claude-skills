@@ -1,214 +1,157 @@
 # Figma 배너 제너레이터
 
-`use_figma`의 `code` 파라미터에 그대로 넣어 실행. 캠페인별로 상단 변수만 교체.
+`use_figma`의 `code` 파라미터에 그대로 넣어 실행. 캠페인 변수만 교체.
 
-1회 실행 = **락 10종 × V1~V4 = 40 프레임** 자동 생성.
+## 핵심 동작
 
-각 V는 Figma `learning Area` 페이지의 검증된 제작물에서 **위치/크기 비율을 추출**한 것. 색은 SEED 토큰으로 일반화하되 배치(헤드/로고/CTA 좌표)는 원본 보존.
+1. Figma `learning Area` (페이지 ID `8605:3281`) 안의 **모든 화이트리스트 프레임**을 사이즈별로 그룹화
+2. 각 프레임 = 1개의 시안. 사이즈마다 헤드/로고/CTA 좌표를 **그대로 보존**
+3. 새 캠페인 카피만 그 위치에 fitSize로 맞춰 출력
+4. **CTA는 무조건 프레임 하단 풀와이드 bar로 정규화** (원본의 CTA 위치/형태 무시, 룰 우선)
+5. **테스트 모드는 단색** — 모든 시안이 흰 BG + 검정 헤드 + 오렌지 CTA bar. layout 차이만 비교 가능
 
----
+검증된 디자인이 사이즈마다 다음과 같이 분포 (98개 총):
+- 320×100: 13개  · 300×250: 7개  · 720×720: 5개
+- 480×320: 11개 · 1200×628: 16개
+- 320×480: 10개 · 720×960: 5개 · 768×1024: 11개 · 720×1280: 18개 · 1200×1600: 2개
 
-## CTA 룰
-- 버튼형 CTA가 헤드/서브와 같은 stack 안 → **inline pill**
-- 헤드/서브와 떨어져 있음 → **풀와이드 bar (가로형은 우측 세로 bar)**
-- 두 형태가 한 디자인에서 섞이지 않음
-
-## V 구분
-같은 사이즈 안에서 V1~V4는 헤드/로고/CTA 위치와 BG가 모두 다르다. 단순 색만 다른 변형 아님.
-
-| V | 출처 패턴 | 배경(SEED) | 특징 |
-|---|---|---|---|
-| V1 | 텍스트-온리 헤로 | `bg.brand-solid` | 헤드만, CTA 없음, 로고 작게 코너 |
-| V2 | 풀블리드 카드 + 풀와이드 CTA | `bg.neutral` (흰색) | 로고 가운데/좌상, 헤드 상단/가운데, 풀와이드 하단 bar |
-| V3 | Weak BG + 좌상 로고 + 풀와이드 CTA | `bg.brand-weak` | 로고 위치 다양화 (우상 등), 헤드 상단/좌측, 풀와이드 하단 bar |
-| V4 | Color-emphasis 헤드 + 풀와이드 CTA | `bg.neutral` | 헤드 키워드 `fg.brand-solid` 강조, 풀와이드 하단 bar |
-
-A 카테고리(320x100)는 공간 부족으로 CTA가 우측 세로 bar로 변형됨.
+이 수치는 화이트리스트가 변하면 자동 반영됨.
 
 ---
 
-## 핵심 제약
-- `text.height` 사용 금지 → `calcH()` 수식만 사용
-- 폰트: Karrot Sans 우선, 미가용 시 Noto Sans KR 폴백 + 노란 경고
-- Logo_korean: `importComponentByKeyAsync` (이모지 절대 금지)
-- **장식원(deco circle) 금지**
-- **새 캠페인 카피 시**: 위치/크기 비율은 원본 보존, 폰트 크기만 fitSize로 자동 조정
+## 절대 룰
+
+- 데이터 출처: Figma `learning Area`만 (다른 소스 금지)
+- CTA 위치: `(0, H-barH, W, barH)` 하단 정렬 풀와이드. 우측 세로 bar / 인라인 pill 금지
+- 색은 **fingerprint dedupe 후 V 인덱스로 다양화하지 않음**. 테스트 모드는 단색
+- `text.height` 사용 금지 (`fitSize` + 절대 좌표만)
+- Logo: `importComponentByKeyAsync('7bd06aa4...')` 인스턴스 (이모지 금지)
+- 장식원·점선원 금지
 
 ---
 
-## 전체 제너레이터 코드
+## 전체 코드
 
 ```js
 // ============================================================
-// 캠페인 변수 (캠페인마다 교체)
+// 캠페인 변수
 // ============================================================
 const PAGE_NAME = '노트북_중고거래_2604';
-const HEAD      = '비싼 노트북,\n이웃이 살게요';
-const HEAD_W    = '이웃이 살게요 →';
-const SUB       = '우리 동네 이웃과 당근에서 직거래';
-const CT        = '당근 열기';
+const HEAD = '비싼 노트북,\n이웃이 살게요';
+const CT   = '당근 열기';
 
 // ============================================================
-// 락 10종 사이즈
+// 락 10종 사이즈 (출력 순서)
 // ============================================================
-const SIZES = [
-  {w:320,  h:100,  cat:'A'},
-  {w:300,  h:250,  cat:'B'},
-  {w:720,  h:720,  cat:'B'},
-  {w:480,  h:320,  cat:'C'},
-  {w:1200, h:628,  cat:'C'},
-  {w:320,  h:480,  cat:'D'},
-  {w:720,  h:960,  cat:'D'},
-  {w:768,  h:1024, cat:'D'},
-  {w:720,  h:1280, cat:'D'},
-  {w:1200, h:1600, cat:'D'},
+const LOCK = [
+  '320x100','300x250','720x720','480x320','1200x628',
+  '320x480','720x960','768x1024','720x1280','1200x1600'
 ];
 
 // ============================================================
-// TEMPLATES — Figma learning Area에서 추출한 비율 데이터
-// 각 카테고리는 V1~V4 (서로 다른 캠페인 4개의 배치 보존)
-// 좌표는 비율(0~1)로 저장. 사이즈에 곱해 절대 좌표로 환산.
+// learning Area에서 화이트리스트 프레임 사이즈별 그룹
 // ============================================================
-const TPL = {
-  // A — Wide Thin (320×100): 우측 풀-하이트 세로 bar CTA가 표준
-  A: [
-    { // V1 - Moloco-style: 텍스트만, CTA 없음
-      bg:'solid',
-      head:{xR:0.04, yR:0.14, wR:0.74, hR:0.70, fontPxR:0.29, lines:2, color:'inverted', align:'left'},
-      cta:null,
-      logo:null,
-    },
-    { // V2 - PickUp-style: 좌 로고 + 가운데 헤드 + 우측 세로 bar
-      bg:'weak',
-      logo:{xR:0.08, yR:0.29, hR:0.43, white:false},
-      head:{xR:0.23, yR:0.14, wR:0.62, hR:0.70, fontPxR:0.20, lines:2, color:'neutral', align:'left'},
-      cta:{type:'bar-right', xR:0.90, wR:0.10},
-    },
-    { // V3 - baro-style: 좌 로고 + 헤드 + 우측 세로 bar (V2와 BG 다름)
-      bg:'white',
-      logo:{xR:0.063, yR:0.28, hR:0.43, white:false},
-      head:{xR:0.20, yR:0.14, wR:0.65, hR:0.70, fontPxR:0.20, lines:2, color:'neutral', align:'left'},
-      cta:{type:'bar-right', xR:0.90, wR:0.10},
-    },
-    { // V4 - jobs-style: 좌측 헤드 + 우측 세로 bar (로고 없이 작은 워드마크 영역)
-      bg:'weak',
-      head:{xR:0.047, yR:0.15, wR:0.50, hR:0.70, fontPxR:0.22, lines:2, color:'emphasis', align:'left'},
-      cta:{type:'bar-right', xR:0.906, wR:0.094},
-      logo:null,
-    },
-  ],
+const la = await figma.getNodeByIdAsync('8605:3281');
+if (!la) throw new Error('learning Area(8605:3281)을 찾을 수 없음');
+const bySize = {};
+for (const c of la.children) {
+  if (c.type !== 'FRAME') continue;
+  const k = `${Math.round(c.width)}x${Math.round(c.height)}`;
+  (bySize[k] = bySize[k] || []).push(c);
+}
 
-  // B — Square (300×250, 720×720): 풀와이드 하단 bar 또는 CTA 없음 헤로
-  B: [
-    { // V1 - Moloco-style: Solid + 라벨 + 큰 헤드, CTA 없음
-      bg:'solid',
-      label:{xR:0.067, yR:0.108, wR:0.413, hR:0.136, fontPxR:0.072, color:'inverted'},
-      head:{xR:0.067, yR:0.288, wR:0.78, hR:0.50, fontPxR:0.176, lines:3, color:'inverted', align:'left'},
-      cta:null,
-      logo:null,
-    },
-    { // V2 - PickUp-style: White + 좌상 로고 + 헤드 + 풀와이드 하단 bar
-      bg:'white',
-      logo:{xR:0.08, yR:0.064, wR:0.137, hR:0.092, white:false},
-      head:{xR:0.073, yR:0.20, wR:0.85, hR:0.50, fontPxR:0.13, lines:2, color:'neutral', align:'left'},
-      cta:{type:'bar-bottom', yR:0.836, hR:0.164},
-    },
-    { // V3 - google-style: Weak + 헤드 + 좌하 로고, CTA 없음
-      bg:'weak',
-      head:{xR:0.063, yR:0.084, wR:0.707, hR:0.50, fontPxR:0.156, lines:3, color:'neutral', align:'left'},
-      logo:{xR:0.067, yR:0.836, wR:0.33, hR:0.084, white:false},
-      cta:null,
-    },
-    { // V4 - baro-style: White + 좌상 로고 + 헤드(키워드 강조) + 풀와이드 하단 bar
-      bg:'white',
-      logo:{xR:0.07, yR:0.064, wR:0.137, hR:0.092, white:false},
-      head:{xR:0.073, yR:0.20, wR:0.85, hR:0.50, fontPxR:0.13, lines:2, color:'emphasis', align:'left'},
-      cta:{type:'bar-bottom', yR:0.836, hR:0.164},
-    },
-  ],
+// ============================================================
+// 노드 식별 휴리스틱
+// ============================================================
+const isLogo = n => /logo[_-]?(korean|symbol|business|primary|white|main)/i.test(n.name||'');
+const isCta  = n => /CTA\s*Button/i.test(n.name||'');
 
-  // C — Landscape (480×320, 1200×628): 좌헤드 + 풀와이드 하단 bar 표준
-  C: [
-    { // V1 - Moloco-style: Solid + 좌헤드 (3줄), 풀와이드 하단 bar
-      bg:'solid',
-      head:{xR:0.048, yR:0.0875, wR:0.465, hR:0.55, fontPxR:0.128, lines:3, color:'inverted', align:'left'},
-      cta:{type:'bar-bottom', yR:0.841, hR:0.169},
-      logo:null,
-    },
-    { // V2 - PickUp-style: 풀블리드 (white) + 좌하 로고 + 풀와이드 bar (헤드 슬롯 = 좌상)
-      bg:'white',
-      logo:{xR:0.056, yR:0.634, wR:0.14, hR:0.119, white:false},
-      head:{xR:0.06, yR:0.10, wR:0.56, hR:0.45, fontPxR:0.16, lines:2, color:'neutral', align:'left'},
-      cta:{type:'bar-bottom', yR:0.863, hR:0.137},
-    },
-    { // V3 - baro-style: Weak + 우상 로고 + 좌헤드 + 풀와이드 bar
-      bg:'weak',
-      logo:{xR:0.852, yR:0.056, wR:0.102, hR:0.0875, white:false},
-      head:{xR:0.06, yR:0.10, wR:0.50, hR:0.55, fontPxR:0.14, lines:3, color:'neutral', align:'left'},
-      cta:{type:'bar-bottom', yR:0.825, hR:0.175},
-    },
-    { // V4 - jobs-style: White + 좌상 작은 로고 + 헤드(강조) + 풀와이드 bar
-      bg:'white',
-      logo:{xR:0.073, yR:0.10, wR:0.104, hR:0.084, white:false},
-      head:{xR:0.073, yR:0.269, wR:0.525, hR:0.45, fontPxR:0.13, lines:3, color:'emphasis', align:'left'},
-      cta:{type:'bar-bottom', yR:0.828, hR:0.172},
-    },
-  ],
+function asRel(n, F) {
+  const ab = n.absoluteBoundingBox, fb = F.absoluteBoundingBox;
+  if (ab && fb) return {x:Math.round(ab.x-fb.x), y:Math.round(ab.y-fb.y), w:Math.round(ab.width), h:Math.round(ab.height)};
+  return {x:Math.round(n.x||0), y:Math.round(n.y||0), w:Math.round(n.width||0), h:Math.round(n.height||0)};
+}
 
-  // D — Portrait (320×480 등): 상단 헤드 + 풀와이드 하단 bar 표준
-  D: [
-    { // V1 - Moloco-style: Solid + 가운데 헤드, 풀와이드 하단 bar
-      bg:'solid',
-      head:{xR:0.06, yR:0.07, wR:0.88, hR:0.55, fontPxR:0.075, lines:3, color:'inverted', align:'left'},
-      cta:{type:'bar-bottom', yR:0.808, hR:0.113},
-      logo:null,
-    },
-    { // V2 - PickUp-style: White + 작은 로고 가운데 상단 + 헤드 + 풀와이드 bar
-      bg:'white',
-      logo:{xR:0.409, yR:0.075, wR:0.169, hR:0.0625, white:false},
-      head:{xR:0.06, yR:0.18, wR:0.88, hR:0.50, fontPxR:0.075, lines:2, color:'neutral', align:'left'},
-      cta:{type:'bar-bottom', yR:0.867, hR:0.119},
-    },
-    { // V3 - baro-style: Weak + 작은 로고 가운데 상단 + 헤드 + 풀와이드 bar
-      bg:'weak',
-      logo:{xR:0.416, yR:0.058, wR:0.169, hR:0.0625, white:false},
-      head:{xR:0.06, yR:0.16, wR:0.88, hR:0.55, fontPxR:0.075, lines:2, color:'neutral', align:'left'},
-      cta:{type:'bar-bottom', yR:0.89, hR:0.11},
-    },
-    { // V4 - jobs-style: White + 작은 로고 가운데 상단 + 헤드(강조) + 풀와이드 bar
-      bg:'white',
-      logo:{xR:0.425, yR:0.058, wR:0.141, hR:0.05, white:false},
-      head:{xR:0.097, yR:0.15, wR:0.81, hR:0.55, fontPxR:0.085, lines:3, color:'emphasis', align:'left'},
-      cta:{type:'bar-bottom', yR:0.885, hR:0.115},
-    },
-  ],
-};
+function findHead(F) {
+  let best=null, bestPx=0;
+  function walk(n,d){
+    if(d>2)return;
+    if(n.type==='TEXT'){try{const fp=Math.round(n.fontSize);if(fp>bestPx){bestPx=fp;best={n,fp};}}catch(_){}}
+    if('children' in n)for(const c of n.children)walk(c,d+1);
+  }
+  for (const c of F.children) walk(c,0);
+  if (best) {
+    const r = asRel(best.n, F);
+    return {...r, fontPx: best.fp, lines:(best.n.characters||'').split('\n').length, real:true};
+  }
+  // 텍스트 없는 프레임: Copy INSTANCE 또는 가장 큰 비-로고/CTA 영역
+  for (const n of F.children) {
+    if (n.type === 'INSTANCE' && /copy/i.test(n.name||'')) return {...asRel(n,F), instance:true};
+  }
+  let bestArea=0, bestNode=null;
+  for (const n of F.children) {
+    if (isLogo(n) || isCta(n)) continue;
+    const a = (n.width||0)*(n.height||0);
+    if (a > bestArea) { bestArea=a; bestNode=n; }
+  }
+  return bestNode ? {...asRel(bestNode,F), instance:true} : null;
+}
+
+const findLogo = F => { for (const n of F.children) if (isLogo(n)) return asRel(n,F); return null; };
+
+function findCta(F) {
+  for (const n of F.children) if (isCta(n)) return asRel(n,F);
+  const W=F.width, H=F.height;
+  for (const n of F.children) {
+    if (n.type==='RECTANGLE'||n.type==='FRAME') {
+      const r=asRel(n,F);
+      if (r.y+r.h > H*0.85 && r.y+r.h <= H+5 && r.w/W > 0.9 && r.h < H*0.4) return r;
+    }
+  }
+  return null;
+}
+
+// CTA 하단 정규화 (사용자 룰: 무조건 하단 풀와이드 bar)
+function ctaBottom(c, W, H) {
+  if (!c) return null;
+  let bh = c.h;
+  if (bh > H*0.4) bh = Math.max(20, Math.round(H*0.13));
+  if (bh < 18)    bh = 24;
+  return {x:0, y:H-bh, w:W, h:bh};
+}
+
+// ============================================================
+// 시안 추출 (모든 프레임)
+// ============================================================
+const VARIANTS = {};
+for (const k of LOCK) {
+  VARIANTS[k] = (bySize[k]||[]).map(F => ({
+    head: findHead(F), logo: findLogo(F), cta: findCta(F)
+  }));
+}
 
 // ============================================================
 // 폰트 / 컬러 / Logo / 텍스트 헬퍼
 // ============================================================
 const fonts=await figma.listAvailableFontsAsync();
-const hasKarrot=fonts.some(f=>f.fontName.family.toLowerCase().includes('karrot'));
-const FAM=hasKarrot?'Karrot Sans':'Noto Sans KR';
-const HV=hasKarrot?'Heavy':'Black';
-const BD='Bold';
+const hasK=fonts.some(f=>f.fontName.family.toLowerCase().includes('karrot'));
+const FAM=hasK?'Karrot Sans':'Noto Sans KR';
+const HV=hasK?'Heavy':'Black', BD='Bold';
 await figma.loadFontAsync({family:FAM,style:HV});
 await figma.loadFontAsync({family:FAM,style:BD});
 
 const hex=s=>({r:parseInt(s.slice(1,3),16)/255,g:parseInt(s.slice(3,5),16)/255,b:parseInt(s.slice(5,7),16)/255});
-const T={solid:hex('#ff6600'),weak:hex('#fff2ec'),text:hex('#212124'),muted:hex('#555b65'),white:hex('#ffffff'),note:hex('#ffcc00')};
+const T={solid:hex('#ff6600'),text:hex('#212124'),white:hex('#ffffff')};
 const fl=c=>[{type:'SOLID',color:c}];
 
 const mainP=await figma.importComponentByKeyAsync('7bd06aa4147de6d53637e133cf38a78659e36f63');
-const mainW=await figma.importComponentByKeyAsync('ccfd3319d4232252f37a5de518cd0631f2174e22');
-const makeLogo=(h,white=false)=>{const i=(white?mainW:mainP).createInstance();const s=h/100;i.resize(203*s,100*s);return i;};
+const makeLogo=(h)=>{const i=mainP.createInstance();const s=h/100;i.resize(203*s,100*s);return i;};
 
-const CF=0.97,LH=1.35;
+const CF=0.97;
 const fitSize=(t,mw,p)=>{const L=Math.max(1,...t.split('\n').map(l=>l.length));return Math.max(10,Math.min(p,Math.floor(mw/(L*CF))));};
-const calcH=(t,sz,mw)=>{const c=Math.max(1,Math.floor(mw/(sz*CF)));const l=t.split('\n').reduce((a,x)=>a+Math.max(1,Math.ceil(x.length/c)),0);return Math.ceil(l*sz*LH);};
 
-const F_=(n,w,h,bg)=>{const f=figma.createFrame();f.name=n;f.resize(w,h);f.fills=fl(bg);f.clipsContent=true;return f;};
-const R_=(w,h,c,r=0)=>{const x=figma.createRectangle();x.resize(w,h);x.fills=fl(c);x.cornerRadius=r;return x;};
+const F_=(n,w,h)=>{const f=figma.createFrame();f.name=n;f.resize(w,h);f.fills=fl(T.white);f.clipsContent=true;return f;};
+const R_=(w,h,c)=>{const x=figma.createRectangle();x.resize(w,h);x.fills=fl(c);x.cornerRadius=0;return x;};
 function TX(s,sz,st,c,ww){
   const t=figma.createText();
   t.fontName={family:FAM,style:st};
@@ -222,166 +165,125 @@ function TX(s,sz,st,c,ww){
 }
 
 // ============================================================
-// 배경 → 텍스트 색 매핑 (SEED 일반화 룰)
+// 시안 1개 그리기 (단색 모드)
 // ============================================================
-const BG = { solid:T.solid, weak:T.weak, white:T.white };
-function colorOf(name, bgKey){
-  if(name==='inverted') return T.white;
-  if(name==='neutral') return T.text;
-  if(name==='muted')   return T.muted;
-  if(name==='emphasis')return T.solid;  // 강조 키워드는 brand-solid
-  return T.text;
-}
+function drawVariant(F, w, h, V) {
+  const cta = ctaBottom(V.cta, w, h);
+  const headMaxY = cta ? cta.y - 8 : h - 8;
 
-// ============================================================
-// 시안 적용 (TEMPLATE에 정의된 비율로 절대 좌표 환산 후 그리기)
-// ============================================================
-async function apply(F, w, h, V) {
-  F.fills = fl(BG[V.bg]);
-
-  // 라벨 (B-V1 Moloco-style의 "총 1억원 혜택" 같은 작은 라벨)
-  if (V.label) {
-    const lx=Math.round(w*V.label.xR), ly=Math.round(h*V.label.yR);
-    const lw=Math.round(w*V.label.wR), lh=Math.round(h*V.label.hR);
-    const lpx=Math.max(10, Math.round(h*V.label.fontPxR));
-    const labelFrame = R_(lw, lh, T.solid, 9999);
-    F.appendChild(labelFrame); labelFrame.x=lx; labelFrame.y=ly;
-    const lt = TX('총 혜택 안내', lpx, HV, colorOf(V.label.color));
-    F.appendChild(lt); lt.x=lx+Math.round(lw*0.1); lt.y=ly+Math.round((lh-lpx)/2);
-  }
-
-  // Logo
-  if (V.logo) {
-    const lh = Math.round(h*V.logo.hR);
-    const logo = makeLogo(lh, !!V.logo.white);
-    F.appendChild(logo);
-    logo.x = Math.round(w*V.logo.xR);
-    logo.y = Math.round(h*V.logo.yR);
-  }
-
-  // Head
   if (V.head) {
-    const hx=Math.round(w*V.head.xR), hy=Math.round(h*V.head.yR);
-    const hw=Math.round(w*V.head.wR), hMaxH=Math.round(h*V.head.hR);
-    const targetPx=Math.max(10, Math.round(h*V.head.fontPxR));
-    const hSz=fitSize(HEAD, hw, targetPx);
-    const head = TX(HEAD, hSz, HV, colorOf(V.head.color), hw);
-    F.appendChild(head);
-    head.x=hx; head.y=hy;
+    let hx = Math.max(0, Math.min(w-40, V.head.x));
+    let hy = Math.max(0, Math.min(headMaxY-20, V.head.y));
+    let hw = Math.min(w - hx, V.head.w || w*0.8);
+    if (hw < 60) hw = w - hx - 10;
+    let hMaxH = Math.min(headMaxY - hy, V.head.h || 100);
+    const targetPx = V.head.fontPx || Math.max(14, Math.round(hMaxH * 0.35));
+    const sz = fitSize(HEAD, hw, targetPx);
+    const head = TX(HEAD, sz, HV, T.text, hw);
+    F.appendChild(head); head.x=hx; head.y=hy;
   }
 
-  // Sub
-  if (V.sub) {
-    const sx=Math.round(w*V.sub.xR), sy=Math.round(h*V.sub.yR);
-    const sw=Math.round(w*V.sub.wR);
-    const targetPx=Math.max(9, Math.round(h*V.sub.fontPxR));
-    const sSz=fitSize(SUB, sw, targetPx);
-    const sub = TX(SUB, sSz, BD, colorOf(V.sub.color || 'muted'), sw);
-    F.appendChild(sub); sub.x=sx; sub.y=sy;
+  if (V.logo) {
+    const lh = Math.max(14, Math.min(V.logo.h || 24, h - 4));
+    const logo = makeLogo(lh);
+    F.appendChild(logo);
+    logo.x = Math.max(0, Math.min(w - logo.width, V.logo.x));
+    logo.y = Math.max(0, Math.min(h - logo.height, V.logo.y));
   }
 
-  // CTA
-  if (V.cta) {
-    if (V.cta.type === 'bar-bottom') {
-      const by = Math.round(h*V.cta.yR);
-      const bh = Math.round(h*V.cta.hR);
-      const bar = R_(w, bh, T.solid);
-      F.appendChild(bar); bar.x=0; bar.y=by;
-      const ctaPx = Math.max(12, Math.round(bh*0.40));
-      const ctaText = TX(`${CT}  >`, ctaPx, HV, T.white);
-      F.appendChild(ctaText);
-      const tw = (CT.length+3)*ctaPx*CF;
-      ctaText.x=Math.round((w-tw)/2);
-      ctaText.y=by+Math.round((bh-ctaPx*1.15)/2);
-    } else if (V.cta.type === 'bar-right') {
-      const bx = Math.round(w*V.cta.xR);
-      const bw = Math.round(w*V.cta.wR);
-      const bar = R_(bw, h, T.solid);
-      F.appendChild(bar); bar.x=bx; bar.y=0;
-      const arPx = Math.max(14, Math.round(bw*0.6));
-      const arrow = TX('→', arPx, HV, T.white);
-      F.appendChild(arrow);
-      arrow.x = bx+Math.round((bw-arPx*0.7)/2);
-      arrow.y = Math.round((h-arPx*1.1)/2);
-    }
-    // inline-pill은 현재 데이터에서 안 나옴. 필요 시 추가.
+  if (cta) {
+    const bar = R_(cta.w, cta.h, T.solid);
+    F.appendChild(bar); bar.x=cta.x; bar.y=cta.y;
+    const ctaPx = Math.max(12, Math.min(Math.round(cta.h*0.45), Math.round(w*0.06)));
+    const txt = TX(`${CT}  >`, ctaPx, HV, T.white);
+    F.appendChild(txt);
+    const tw = (CT.length+3) * ctaPx * CF;
+    txt.x = Math.round((w - tw)/2);
+    txt.y = cta.y + Math.round((cta.h - ctaPx*1.15)/2);
   }
 }
 
 // ============================================================
-// 배치
+// ClaudeArea 페이지 컨테이너 준비
 // ============================================================
-const CLAUDE_AREA_ID='8297:11349';
-const pg=figma.getNodeById(CLAUDE_AREA_ID);
-if(!pg)throw new Error('Claude Area 페이지를 찾을 수 없음');
+const pg=figma.getNodeById('8297:11349');
+if (!pg) throw new Error('ClaudeArea(8297:11349) 페이지를 찾을 수 없음');
 await figma.setCurrentPageAsync(pg);
 
 let container=pg.children.find(c=>c.name===PAGE_NAME);
-if(container){[...container.children].forEach(c=>{try{c.remove();}catch(e){}});}
-else{
-  let oX=0,oY=0;
-  if(pg.children.length>0){
-    const lowest=pg.children.reduce((a,b)=>(a.y+a.height>=b.y+b.height)?a:b);
-    oX=0;oY=lowest.y+lowest.height+200;
+if (container) {
+  [...container.children].forEach(c=>{try{c.remove();}catch(e){}});
+} else {
+  let oY=0;
+  if (pg.children.length>0) {
+    const lo=pg.children.reduce((a,b)=>(a.y+a.height>=b.y+b.height)?a:b);
+    oY=lo.y+lo.height+200;
   }
   container=figma.createFrame();
   container.name=PAGE_NAME;
-  container.fills=[];container.clipsContent=false;
-  pg.appendChild(container);container.x=oX;container.y=oY;
+  container.fills=[];
+  container.clipsContent=false;
+  pg.appendChild(container);
+  container.x=0; container.y=oY;
 }
 
-const COL_GAP=80, ROW_GAP=160;
-let cy=0,maxX=0;
+// ============================================================
+// 모든 시안 그리기
+// ============================================================
+let cy=0, maxX=0;
 const created=[];
-for(const sz of SIZES){
-  const variants = TPL[sz.cat];
+for (const k of LOCK) {
+  const [W,H] = k.split('x').map(Number);
+  const list = VARIANTS[k];
   let cx=0;
-  for(let i=0;i<4;i++){
-    const V = variants[i];
-    const F = F_(`${sz.w}×${sz.h}_V${i+1}`, sz.w, sz.h, BG[V.bg]);
+  for (let i=0; i<list.length; i++) {
+    const F = F_(`${k}_V${i+1}`, W, H);
     container.appendChild(F);
     F.x=cx; F.y=cy;
-    await apply(F, sz.w, sz.h, V);
+    drawVariant(F, W, H, list[i]);
     created.push(F);
-    cx += sz.w + COL_GAP;
+    cx += W + 60;
   }
-  if(cx>maxX) maxX=cx;
-  cy += sz.h + ROW_GAP;
+  if (cx > maxX) maxX = cx;
+  cy += H + 140;
 }
 container.resize(Math.max(maxX,1), Math.max(cy,1));
 figma.viewport.scrollAndZoomIntoView([container]);
-figma.currentPage.selection=created;
-figma.notify(`✅ ${PAGE_NAME} · ${created.length} frames · ${FAM}`);
-return `OK · ${created.length} frames @ ${PAGE_NAME}`;
+figma.notify(`✅ ${PAGE_NAME} · ${created.length} 시안 · ${FAM}`);
+return `OK · ${created.length} variants @ ${PAGE_NAME}`;
 ```
 
 ---
 
-## 캠페인 치환 예시
+## 캠페인 치환
 
 ```js
-const PAGE_NAME='당근페이_송금_2604';
-const HEAD='계좌번호 없이\n이름만으로 송금';
-const HEAD_W='이름만으로 송금 →';
-const SUB='직거래 후 바로 당근페이로';
-const CT='당근페이 쓰기';
+const PAGE_NAME = '당근페이_송금_2604';
+const HEAD = '계좌번호 없이\n이름만으로 송금';
+const CT   = '당근페이 쓰기';
 ```
+
+---
+
+## 테스트 → 운영 전환
+
+테스트 모드(단색)에서 layout 검증 후 **운영 카피 출력 시**:
+- 같은 코드 그대로 사용 (단색 OK)
+- 또는 BG/색을 V별로 다양화하려면 `T.white` 대신 V 인덱스 % 4로 `[white, weak, solid, white]` 주기 (별도 옵션, 기본값 단색)
+
+---
+
+## 데이터 갱신
+
+새 디자인을 시안에 추가하려면:
+1. Figma `learning Area` 페이지에 락 10종 사이즈로 새 프레임 추가
+2. 자식 노드 이름에 `Logo_korean`/`CTA Button` 등 식별 가능한 이름 사용
+3. 다음 스킬 실행 시 자동 반영
 
 ---
 
 ## 실패 복구
-1. 새 카피가 너무 길어 헤드 영역을 넘침 → fitSize의 hMaxH 한계로 자동 축소되지만, 너무 작아지면 다른 V로 변경 권장
-2. CTA bar 위 텍스트가 안 보임 → bar 색(`bg.brand-solid`)과 텍스트 색(`fg.neutral-inverted`) 대비 확인
-3. A 카테고리 우측 세로 bar가 가려짐 → bar의 cornerRadius=0 확인
-4. Logo 위치가 화면 밖 → V.logo.xR/yR가 0~(1-scale) 안에 있는지 확인
 
----
-
-## TEMPLATE 갱신 룰
-
-새로운 캠페인의 검증된 디자인을 추가하려면:
-1. Figma `learning Area`에 락 10종 사이즈로 추가
-2. `use_figma`로 해당 프레임의 자식 노드 좌표/크기 추출
-3. `frame.W`/`frame.H`로 나눠 비율로 변환
-4. `TPL.{cat}` 배열의 V 객체 추가/교체
-5. 색은 `bg`/`color` 키로 SEED 토큰 매핑 (원본 색 무시)
+- 헤드가 CTA bar와 겹침: `headMaxY = cta.y - 8` 룰로 자동 회피되지만, 헤드 영역이 너무 좁으면 `fitSize` preferred 더 낮추기
+- 로고가 헤드와 겹침: 로고 위치는 원본 좌표 그대로라 충돌 가능. 이 경우 해당 시안은 충돌 사유로 표시 (자동 검증 단계에서 발견)
+- 음수 좌표 시안 (mask group이 frame을 벗어남): `clipsContent=true` + clamp로 처리됨
