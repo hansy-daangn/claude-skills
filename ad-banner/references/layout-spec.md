@@ -1,8 +1,10 @@
 # 레이아웃 스펙 — 인덱스
 
-확정 사이즈는 락 10종(아래 표). 각 사이즈마다 검증된 변형 V1~V4가 별도 md에 있다.
+확정 사이즈는 락 10종(아래 표). 각 사이즈는 비율 카테고리(A/B/C/D)에 속하고, 같은 카테고리 안에서 V1~V4 시안이 같은 비율 데이터를 공유한다.
 
-레이아웃 함수는 비율 카테고리(A/B/C/D)로 그루핑하고, 변형(V1~V4)은 같은 카테고리 안에서 배경/구조/CTA 유무가 다르다.
+V1~V4는 단순 색 변형이 아니라 **헤드/로고/CTA 위치가 모두 다른 4가지 배치**다. 비율 데이터는 Figma `learning Area`의 검증된 4개 캠페인(Moloco, PickUp, baro_running, image_jobs)에서 추출.
+
+좌표·비율 데이터는 `figma-generator.md`의 `TPL` 객체에 보존된다. 각 사이즈 md는 시안의 추상 특징만 기록한다.
 
 ---
 
@@ -21,37 +23,57 @@
 | 720×1280 | 9:16 | D (Tall Portrait) | [layouts/720x1280.md](./layouts/720x1280.md) |
 | 1200×1600 | 3:4 | D (Portrait Large) | [layouts/1200x1600.md](./layouts/1200x1600.md) |
 
-> 락 10종은 SKILL.md "기본 사이즈 세트"와 동일. 사용자 직접 수정 요청 없이 변경 금지.
+---
+
+## CTA 룰
+
+- 버튼형 CTA가 헤드/서브와 같은 stack 안 → **inline pill** (텍스트 stack 좌측 정렬, 같은 폭)
+- 헤드/서브와 떨어져 있음 → **풀와이드 bar** (가로형 320×100은 우측 세로 풀-하이트 bar로 변형, 폭 ~10%)
+- 두 형태가 한 디자인에서 섞이지 않음
+
+검증된 데이터에서 inline pill은 거의 등장하지 않고, 모든 CTA는 bar 형태 또는 CTA 없음(Solid Hero).
 
 ---
 
-## 변형 골격 (V1~V4 공통 정의)
+## 카테고리별 V1~V4 (요약)
 
-같은 사이즈 안에서 V1~V4는 배경·구조·CTA 유무가 다르다. 비율 공식은 카테고리(A/B/C/D)에 따라 결정되고, V는 그 위에 얹는 스타일.
+### A — Wide Thin (320×100)
+- V1: Solid 텍스트만 (CTA 없음)
+- V2: Weak + 좌 로고 + 우측 세로 bar
+- V3: White + 좌 로고 + 우측 세로 bar
+- V4: Weak + 강조 헤드 + 우측 세로 bar
 
-| V | 배경 | 헤드 위치 | CTA | 일러스트 |
-|---|---|---|---|---|
-| V1 | 흰색 (`bg.neutral`) | 상단 / 좌측 (사이즈에 따라) | 풀와이드 하단 `bg.brand-solid` 버튼 (`$radius.full`) | 가운데 또는 우측 |
-| V2 | `bg.brand-solid` | 상단 / 좌측 | 없음 또는 작은 `bg.brand-weak` 인라인 | 가운데 또는 우측 (캐릭터 위주) |
-| V3 | `bg.brand-weak` | 좌상 로고 + 텍스트 스택 | 스택 안 인라인 또는 풀와이드 (사이즈) | 가운데 또는 우측 |
-| V4 | 흰색 또는 `bg.brand-solid` | 헤드 강조 (키워드 1~2개를 `fg.brand-solid`) | 풀와이드 또는 없음 | 가운데 |
+### B — Square-ish (300×250, 720×720)
+- V1: Solid + 라벨 + 큰 헤드 (CTA 없음)
+- V2: White + 좌상 로고 + 풀와이드 하단 bar
+- V3: Weak + 헤드만 + 좌하 로고 (CTA 없음)
+- V4: White + 좌상 로고 + 강조 헤드 + 풀와이드 하단 bar
 
-> 320×100(A 카테고리)은 공간 부족으로 별도 변형 정의 — `layouts/320x100.md` 참조.
+### C — Landscape (480×320, 1200×628)
+- V1: Solid + 좌헤드 3줄 + 풀와이드 하단 bar
+- V2: White + 좌하 로고 + 좌헤드 + 풀와이드 하단 bar
+- V3: Weak + 우상 로고 + 좌헤드 + 풀와이드 하단 bar
+- V4: White + 좌상 로고 + 강조 헤드 + 풀와이드 하단 bar
+
+### D — Portrait (5개 사이즈)
+- V1: Solid + 상단 헤드 3줄 + 풀와이드 하단 bar
+- V2: White + 가운데 상단 로고 + 헤드 + 풀와이드 하단 bar
+- V3: Weak + 가운데 상단 로고 + 헤드 + 풀와이드 하단 bar
+- V4: White + 가운데 상단 로고 + 강조 헤드 + 풀와이드 하단 bar
 
 ---
 
-## 카테고리별 비율 공식 (foundation-spacing 환산)
+## 데이터 출처
 
-| 카테고리 | Padding | Logo h | Head 폰트 | Sub 폰트 | CTA 폰트 | 컨텐츠 너비 cW |
-|---|---|---|---|---|---|---|
-| A (Wide Thin, ≥2.5) | `w × 0.05` | `h × 0.36` | `fitSize(HEAD, mw, h × 0.20)` | — | — | `w − pad − logo − gap` |
-| B (Square, 0.9~1.3) | `min(w,h) × 0.075` | `h × 0.085` | `fitSize(HEAD, cW, h × 0.11)` | `fitSize(SUB, cW, h × 0.046)` | `h × 0.058` | `w − pad × 2` |
-| C (Landscape, 1.3~2.5) | `h × 0.08` | `h × 0.115` | `fitSize(HEAD, cW, h × 0.14)` | `fitSize(SUB, cW, h × 0.058)` | `h × 0.072` | `w × 0.58` |
-| D (Portrait, <0.9) | `w × 0.065` | `h × 0.055` | `fitSize(HEAD, cW, h × 0.08)` | `fitSize(SUB, cW, h × 0.032)` | `h × 0.048` | `w − pad × 2` |
+비율 데이터는 다음 캠페인에서 추출 (각 사이즈마다 4개 다른 캠페인):
+- Moloco_Static / Native (당근비즈니스 어워즈)
+- google_GDN_Static (이벤트성)
+- img_PickUpMonthlyPromo_v1
+- baro_running
+- image_jobs_review/nearby/new semester
+- image_realty_honey/reliable_tenant
 
-gap 표준:
-- B/D: H↔S `h × 0.015`, S↔C `h × 0.03~0.035`
-- C: H↔S `h × 0.025`, S↔C `h × 0.05`, Logo↔Stack `h × 0.05`
+색은 SEED 토큰(`bg.brand-solid` / `bg.brand-weak` / `bg.neutral` / `fg.neutral` / `fg.neutral-inverted` / `fg.brand-solid`)으로 일반화. 원본의 검정 배경, 일러스트 색 등은 무시 — 위치와 크기만 보존.
 
 ---
 
@@ -64,10 +86,7 @@ gap 표준:
 ## 레이아웃 실패 체크 (생성 후 screenshot 검증)
 
 - [ ] 헤드가 프레임 안에 완전히 들어감 (잘림 없음)
-- [ ] 헤드↔서브↔CTA 겹침 없음
-- [ ] 로고와 스택 겹침 없음
-- [ ] 좌우 pad 균등
-- [ ] CTA가 시각적으로 "버튼"으로 인식됨
-- [ ] V2/V4의 큰 헤드가 cW 밖으로 튀어나오지 않음
-
-하나라도 실패하면 해당 사이즈/V의 비율 파라미터 재조정.
+- [ ] CTA bar 위 텍스트가 가운데 정렬됨
+- [ ] 로고와 헤드/CTA 겹침 없음
+- [ ] V1~V4가 같은 사이즈 안에서 배치가 진짜 다름 (단순 색 변형 아님)
+- [ ] 우측 세로 bar (A 카테고리)가 cornerRadius=0으로 깔끔
