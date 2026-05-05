@@ -15,30 +15,17 @@ description: |
 
 ## 사용법
 
-메시지에 `#소재제작` / `#배너제작` / `#광고소재` 중 하나가 있을 때만 발동.
+메시지 어디에든 `#소재제작` / `#배너제작` / `#광고소재` 중 하나를 포함하면 발동:
 
-### 기본 (이미지 없음)
-> `#소재제작` 메모리 대란으로 노트북 가격이 급상승. 비싼 새거보다 당근에서 합리적으로 둘러보라는 맥락
+> `#소재제작` 요새 메모리 대란으로 노트북 가격이 급상승하고 있어. 비싼 새거보다 당근에서 합리적인 가격에 올라온거 있는지 둘러보라는 맥락에서 소재를 제작해봐
 
-→ weak 배경 + 검정 텍스트로 10종 배너 생성
+> `#배너제작` 당근페이 송금, 몰로코용으로
 
-### 이미지 사용
-1. Figma 파일에 `assets` 페이지가 자동 생성되어 있음
-2. 사용하려는 이미지를 `img_<키워드>` 프레임에 drag & drop
-   (없으면 `#소재제작 ... #img=노트북_데스크` 같이 명시할 때 빈 프레임 신규 생성됨)
-3. `#소재제작 #img=노트북_데스크 ...` 형태로 키워드 추가
+> `#광고소재` 봄맞이 옷 정리, 메타 사이즈로
 
-> `#소재제작 #img=노트북_데스크` 메모리 대란으로 노트북 비싸니까...
+해시태그 없이 "소재 만들어", "배너 뽑아줘" 같은 자연어만으로는 발동하지 않는다.
 
-→ 풀블리드 이미지 + 다크 그라데이션 + 흰 텍스트로 10종 배너 생성
-
-### 처리 순서
-1. 해시태그 + 주제 파싱
-2. `#img=...` 있으면 IMAGE_ASSET 변수 설정
-3. 카피 3종(HEAD/SUB/CT) 작성
-4. Figma 새 페이지(`주제_MMDD`) 생성, 10종 배너 자동 생성
-5. 스크린샷 2~3개 검증
-6. SEED 체크리스트 출력
+스킬이 알아서 카피 작성 → Figma 새 페이지 생성(`주제_MMDD`) → 배너 10종 생성 → 스크린샷 검증.
 
 ---
 
@@ -56,7 +43,7 @@ description: |
 ## 실행 순서
 
 1. **입력 파싱** — 주제/소구점/매체 추출. 미지정이면 몰로코 기본.
-2. **카피 작성** — `references/brand-voice.md` + `references/copy-library.md` 참조. HEAD/SUB/CTA 3종.
+2. **카피 작성** — `references/foundation-voice-tone.md` + `references/copy-library.md` 참조. HEAD/SUB/CTA 3종.
 3. **Figma 생성** — `references/figma-generator.md` 코드 템플릿에 PAGE_NAME + 카피만 치환해서 `use_figma` 실행.
 4. **검증** — `get_screenshot` 2~3개 확인 (겹침/잘림/로고 충돌). 문제 있으면 파라미터 조정 후 재생성.
 5. **체크리스트 출력** — 아래 SEED 확인 블록 반드시 포함.
@@ -64,9 +51,9 @@ description: |
 ```
 ✅ SEED 적용 확인
 - 폰트: Karrot Sans Heavy/Bold [또는 Noto Sans KR Black/Bold 플레이스홀더]
-- 브랜드 컬러: $color.bg.brand-solid (#ff6600)
-- 연한 배경: $color.bg.brand-weak (#fff2ec)
-- 메인 텍스트: $color.fg.neutral (#212124)
+- 브랜드 컬러: $color.bg.brand-solid
+- 연한 배경: $color.bg.brand-weak
+- 메인 텍스트: $color.fg.neutral
 - CTA 모서리: $radius.full (9999px)
 - Logo_korean 컴포넌트 인스턴스 (Primary/White)
 - 당근 voice 키워드: "[실제 쓴 키워드]"
@@ -75,37 +62,18 @@ description: |
 
 ---
 
-## 절대 규칙
+## 절대 규칙 (각 항목은 해당 foundation 파일이 정답)
 
-### R1. 폰트
-Karrot Sans Heavy/Bold. sandbox에서 없으면 Noto Sans KR Black/Bold로 대체 + 노란 경고 프레임.
-
-### R2. 로고
-🥕 이모지 금지. Logo_korean 컴포넌트 인스턴스만:
-- Primary `7bd06aa4147de6d53637e133cf38a78659e36f63` — 밝은 배경
-- White `ccfd3319d4232252f37a5de518cd0631f2174e22` — 오렌지 배경
-
-### R3. 색상 (SEED 토큰 정확한 값만)
-| 역할 | 토큰 | hex |
+| # | 룰 | 정답 출처 |
 |---|---|---|
-| CTA·브랜드 배경 | `$color.bg.brand-solid` | `#ff6600` |
-| 연한 배경 | `$color.bg.brand-weak` | `#fff2ec` |
-| 메인 텍스트 | `$color.fg.neutral` | `#212124` |
-| 보조 텍스트 | `$color.fg.neutral-muted` | `#555b65` |
-| 반전 텍스트 | `$color.fg.neutral-inverted` | `#ffffff` |
-
-`#FF6F0F` 같은 유사값 절대 금지.
-
-### R4. 텍스트 높이
-`text.height` 읽기 금지 — 항상 10 반환함. `calcH()` 수식 함수만 사용. (`references/figma-generator.md` 참조)
-
-### R5. 카피 (당근 voice)
-- 능동문, 구체적 상황, "우리 동네/이웃" 키워드 필수
-- 클리셰("놀라운", "최고의") · 영어 번역체 금지
-- `references/brand-voice.md` DO/DON'T 준수
-
-### R6. CTA
-`references/copy-library.md` 승인 목록에서만 선택.
+| R1 | Karrot Sans Heavy/Bold (없으면 Noto Sans KR Black/Bold + 노란 경고) | `references/foundation-typography.md` |
+| R2 | Logo_korean 컴포넌트 인스턴스 (🥕 이모지·SVG 직접 그리기 금지) | `references/foundation-logo.md` |
+| R3 | SEED Role 토큰 정확값만 (#FF6F0F 등 유사값 금지) | `references/foundation-color.md` |
+| R4 | spacing은 비율 + clamp(min, max). 절대 px 토큰 그대로 금지 | `references/foundation-spacing.md` |
+| R5 | radius는 CTA·장식원만. CTA = `$radius.full`(9999) | `references/foundation-radius.md` |
+| R6 | `text.height` 사용 금지 — `calcH()` 수식만 | `references/foundation-typography.md` |
+| R7 | 카피는 당근 voice 9개 체크리스트 통과 (능동·동네·구체·~해요) | `references/foundation-voice-tone.md` |
+| R8 | CTA는 voice-tone §5 작동 원리로 생성 (4가지 후킹 패턴 + 자가 검증 6개 통과). copy-library는 사례 참고만 | `references/foundation-voice-tone.md` (§5) |
 
 ---
 
@@ -113,10 +81,15 @@ Karrot Sans Heavy/Bold. sandbox에서 없으면 Noto Sans KR Black/Bold로 대�
 
 | 파일 | 언제 |
 |---|---|
-| `references/brand-voice.md` | 카피 작성 시 필수 |
-| `references/copy-library.md` | 헤드/서브/CTA 후보 |
+| `references/foundation-voice-tone.md` | 카피 작성 시 — voice/tone, 헤드 패턴, 자가 검증 9개 |
+| `references/foundation-color.md` | 색 결정 시 — SEED Role 토큰, 배경/텍스트 페어링 |
+| `references/foundation-spacing.md` | 간격 결정 시 — 비율 공식 + clamp + 사이즈별 환산표 |
+| `references/foundation-radius.md` | 모서리 결정 시 — CTA/장식원/노트 |
+| `references/foundation-typography.md` | 폰트 크기·행간·자간 — fitSize·calcH 수식 근거 |
+| `references/foundation-logo.md` | 로고 컴포넌트 키 + 비율별 크기 |
+| `references/copy-library.md` | 캠페인별 헤드/서브/CTA 후보 |
+| `references/layout-spec.md` | 비율별(A/B/C/D) 레이아웃 구조 |
 | `references/figma-generator.md` | Figma 생성 코드 템플릿 |
-| `references/layout-spec.md` | 비율별 레이아웃 |
 | `references/quality-checklist.md` | 출력 전 자가 검증 |
 
 ---
@@ -137,8 +110,10 @@ Karrot Sans Heavy/Bold. sandbox에서 없으면 Noto Sans KR Black/Bold로 대�
 
 | 증상 | 처방 |
 |---|---|
-| 텍스트 겹침 | `calcH()` 수식 사용 확인 |
-| 텍스트 프레임 밖으로 | `fitSize()` 적용 확인 |
-| 로고가 이모지 | `importComponentByKeyAsync` 확인 |
+| 텍스트 겹침 | `calcH()` 사용 확인 (foundation-typography) |
+| 텍스트 프레임 밖으로 | `fitSize()` 적용 확인 (foundation-typography) |
+| 로고가 이모지 | `importComponentByKeyAsync` 확인 (foundation-logo) |
 | 카피 밍밍함 | copy-library.md 템플릿 사용 |
-| Landscape에서 로고↔텍스트 충돌 | layC 수직 안전 로직 확인 |
+| Landscape에서 로고↔텍스트 충돌 | layC 수직 안전 로직 확인 (figma-generator) |
+| 색 hex가 SEED와 다름 | foundation-color.md Drift 알림 참고 |
+| 큰 배너에서 padding이 점처럼 좁음 | 비율 공식 + clamp 적용 (foundation-spacing) |
