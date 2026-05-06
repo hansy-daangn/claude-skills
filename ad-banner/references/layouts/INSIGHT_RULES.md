@@ -43,6 +43,19 @@
 - 박스의 width/height는 CTA 텍스트의 자동너비 + padding으로 결정.
 - 박스 색상은 시안의 색상을 그대로 사용 (SEED Role 토큰 매핑).
 
+## L8. 장식원 / 장식 도형 금지
+
+- 배경 장식 도형(원, 반원, 곡선, 블러 원형 등) 일체 생성 금지.
+- 시안에 장식원이 있어도 결과물에서 제거.
+- `foundation-radius.md`의 radius는 CTA에만 적용 (장식원에는 적용 안 함).
+
+## L9. 출처 시안 1:1 보존
+
+- 사이즈별 md의 각 변형은 **출처 시안과 1:1 매칭**. 출처 노드ID를 기록(`source: nodeId`).
+- 두 변형의 디자인을 임의로 섞거나 합성하지 않는다.
+- 변형의 일부 요소만 다른 변형에서 따와 새 변형을 만들지 않는다.
+- 사이즈별 md에 기록할 항목은 화이트리스트(글자박스 w/h/x/y, 로고 h/x/y, CTA 박스 w/h/color)만. 그 외(사진 위치/크기, 장식 디테일, 그라데이션 등) 기록 금지.
+
 ---
 
 ## 룰 위반 자동 검출 (생성/검증 단계)
@@ -56,3 +69,5 @@
 | L5 | 텍스트 노드 textAutoResize ≠ WIDTH_AND_HEIGHT |
 | L6 | 텍스트 노드의 fontSize/lineHeight/letterSpacing/fills/fontWeight = mixed |
 | L7 | CTA 텍스트의 부모 type ≠ FRAME && ≠ AUTO-LAYOUT && ≠ RECTANGLE 그룹 |
+| L8 | 배경에 장식 ELLIPSE/원형 도형 또는 radius=full인 비-CTA 도형 존재 |
+| L9 | 사이즈별 md의 변형에 `source: nodeId` 누락 / 화이트리스트 외 항목 기록됨 |

@@ -4,18 +4,33 @@ description: |
   당근 광고 이미지 배너를 SEED 디자인 시스템 + 당근 브랜드 보이스에 맞춰 자동으로 기획하고 Figma 파일로 생성하는 스킬.
 
   **다음 명시적 트리거가 있을 때만 발동. 자연어 문맥만으로는 절대 발동하지 않는다.**
-  - `#소재제작`
-  - `#배너제작`
-  - `#광고소재`
+  - `#소재제작` — 카피 작성 + Figma 신규 페이지에 전 사이즈 프레임 생성
+  - `#배너제작` — 동일
+  - `#광고소재` — 동일
+  - `#배너학습` — 기존 시안에서 사이즈별 레이아웃 인사이트 추출 → `references/layouts/{W}x{H}.md` 채움
 
-  워크플로우: 당근 voice 카피 작성 → Figma 신규 페이지에 전 사이즈 프레임 생성
+  공통 워크플로우 모두 `references/layouts/LOCKED_SIZES.md` + `references/layouts/INSIGHT_RULES.md` + `references/layouts/README.md` 자동 로드 필수.
 ---
 
 # ad-banner 스킬
 
+## ⛳ 트리거 발동 시 자동 로드 필수
+
+어떤 트리거든 발동 즉시 다음 3개 파일을 우선 읽는다. 이 파일들이 사용자의 누적 지시·룰의 단일 진실 소스(single source of truth):
+
+1. `references/layouts/LOCKED_SIZES.md` — 사이즈 10종 락 (직접 수정 요청 없이 변경 금지)
+2. `references/layouts/INSIGHT_RULES.md` — 절대 룰 L1~L9
+3. `references/layouts/README.md` — 학습 워크플로우 + 기록 항목 화이트리스트
+
+그 다음 트리거별 워크플로우 진입.
+
+---
+
 ## 사용법
 
-메시지 어디에든 `#소재제작` / `#배너제작` / `#광고소재` 중 하나를 포함하면 발동:
+### 생성 트리거 — `#소재제작` / `#배너제작` / `#광고소재`
+
+메시지 어디에든 위 중 하나를 포함하면 발동:
 
 > `#소재제작` 요새 메모리 대란으로 노트북 가격이 급상승하고 있어. 비싼 새거보다 당근에서 합리적인 가격에 올라온거 있는지 둘러보라는 맥락에서 소재를 제작해봐
 
@@ -23,9 +38,28 @@ description: |
 
 > `#광고소재` 봄맞이 옷 정리, 메타 사이즈로
 
-해시태그 없이 "소재 만들어", "배너 뽑아줘" 같은 자연어만으로는 발동하지 않는다.
+스킬이 알아서 카피 작성 → Figma 새 페이지 생성(`주제_MMDD`) → 배너 **10종** 생성 (`LOCKED_SIZES.md`) → 검증.
 
-스킬이 알아서 카피 작성 → Figma 새 페이지 생성(`주제_MMDD`) → 배너 10종 생성 → 스크린샷 검증.
+### 학습 트리거 — `#배너학습`
+
+기존 Figma 시안에서 사이즈별 레이아웃을 학습해 `references/layouts/{W}x{H}.md`를 채운다.
+
+```
+#배너학습 figma=https://www.figma.com/design/{fileKey}/{name}?node-id={a}-{b}
+#배너학습 figma=URL exclude=Moloco_Native_720x1280,...   # FIX 케이스 제외
+```
+
+**학습 룰 (필수):**
+- ❌ **스크린샷 금지** (`get_screenshot` 사용 금지). 수치 도구만: `get_metadata`, `get_design_context`.
+- 사용자가 데스크톱 Figma에서 **한 사이즈의 모든 변형을 다중 선택** → 1콜로 추출 → 사이즈별 md 채움 → 다음 사이즈로 사용자가 selection 변경 → 반복.
+- 사이즈별 md 기록 항목 **화이트리스트만**:
+  - 글자박스: `w, h, x, y`
+  - 로고: `h, x, y`
+  - CTA: 박스 유무 / 박스가 있으면 `w, h, color`
+- 그 외 (사진 위치/크기, 장식 도형, 그라데이션 등) 기록 금지.
+- 사이즈당 변형 3~4개. 각 변형은 출처 시안과 1:1 (디자인 임의 변형/혼합 금지, L9).
+
+해시태그 없이 "소재 만들어", "배너 뽑아줘" 같은 자연어만으로는 어떤 트리거도 발동하지 않는다.
 
 ---
 
@@ -79,6 +113,8 @@ description: |
 | R11 | 텍스트 박스(Rectangle/Autolayout) 보존. CTA 박스는 같은 사이즈 프레임으로 감싸고 색상 사용 | `references/layouts/INSIGHT_RULES.md` L3, L7 |
 | R12 | 모든 텍스트 노드는 자동너비. 한 노드 내 mixed 스타일(폰트·자간·줄간격·색·굵기) 금지 — 다르면 노드 분리 | `references/layouts/INSIGHT_RULES.md` L5, L6 |
 | R13 | 마진은 정답 시안과 무관하게 항상 foundation-spacing 적용 ⭐ | `references/layouts/INSIGHT_RULES.md` L4 |
+| R14 | 장식원 사용 금지 (배경 장식 도형 일체) | `references/layouts/INSIGHT_RULES.md` L8 |
+| R15 | 각 변형은 출처 시안과 1:1. 디자인 임의 변형·혼합 금지 | `references/layouts/INSIGHT_RULES.md` L9 |
 
 ---
 
