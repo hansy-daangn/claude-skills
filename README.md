@@ -6,47 +6,6 @@ hansy@daangn.com 의 Claude Code 스킬 모음. 어떤 기기/세션에서도 �
 
 ## 설치
 
-### 방법 1: 한 줄 설치 (권장, 권한 문제 없음)
-
-**macOS / Linux** — 터미널에 붙여넣기:
-```bash
-curl -fsSL https://raw.githubusercontent.com/hansy-daangn/claude-skills/main/install.command | bash
-```
-
-**Windows** — PowerShell 에 붙여넣기:
-```powershell
-$f="$env:TEMP\claude-skills-install.bat"; iwr -useb https://raw.githubusercontent.com/hansy-daangn/claude-skills/main/install.bat -OutFile $f; & $f
-```
-
-### 방법 2: 클릭 실행
-
-1. 이 repo 를 zip 으로 다운로드하거나 `git clone`
-2. OS 에 맞는 단일 파일을 더블클릭
-   - **macOS**: `install.command`
-   - **Windows**: `install.bat` (cmd + PowerShell 폴리글랏 단일 파일)
-3. 터미널/PowerShell 창이 열리며 자동 실행:
-   - 기존 스킬 폴더는 타임스탬프 백업으로 보존
-   - GitHub 최신 버전이 새로 설치됨
-     - macOS / Linux: `~/.claude/skills`
-     - Windows: `%USERPROFILE%\.claude\skills`
-
-> ⚠️ **macOS — ZIP 다운로드 후 "권한 거부" 에러**:
-> ZIP 은 실행 비트(`+x`)를 보존하지 않습니다. 터미널에서 한 번만:
-> ```bash
-> chmod +x install.command
-> ```
-> 또는 git clone 으로 받으면 권한이 보존됩니다.
-
-> ⚠️ macOS Gatekeeper 차단 시:
-> 우클릭 → 열기 → 열기 (한 번만)
-
-> ⚠️ Windows SmartScreen 차단 시:
-> "추가 정보" → "실행" 클릭
-
-> ℹ️ 사전 조건: `git` 설치 필수 ([git-scm.com](https://git-scm.com))
-
-### 방법 3: 명령어로 직접
-
 ```bash
 # 최초 1회 (새 기기)
 git clone https://github.com/hansy-daangn/claude-skills.git ~/.claude/skills
