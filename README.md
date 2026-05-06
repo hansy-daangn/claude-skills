@@ -15,15 +15,15 @@ curl -fsSL https://raw.githubusercontent.com/hansy-daangn/claude-skills/main/ins
 
 **Windows** — PowerShell 에 붙여넣기:
 ```powershell
-iwr -useb https://raw.githubusercontent.com/hansy-daangn/claude-skills/main/install.ps1 | iex
+$f="$env:TEMP\claude-skills-install.bat"; iwr -useb https://raw.githubusercontent.com/hansy-daangn/claude-skills/main/install.bat -OutFile $f; & $f
 ```
 
 ### 방법 2: 클릭 실행
 
 1. 이 repo 를 zip 으로 다운로드하거나 `git clone`
-2. OS 에 맞는 파일을 더블클릭
+2. OS 에 맞는 단일 파일을 더블클릭
    - **macOS**: `install.command`
-   - **Windows**: `install.bat` (내부에서 `install.ps1` 호출)
+   - **Windows**: `install.bat` (cmd + PowerShell 폴리글랏 단일 파일)
 3. 터미널/PowerShell 창이 열리며 자동 실행:
    - 기존 스킬 폴더는 타임스탬프 백업으로 보존
    - GitHub 최신 버전이 새로 설치됨
