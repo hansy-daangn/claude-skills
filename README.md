@@ -6,6 +6,20 @@ hansy@daangn.com 의 Claude Code 스킬 모음. 어떤 기기/세션에서도 �
 
 ## 설치
 
+### 방법 1: 클릭 한 번 (권장, macOS)
+
+1. 이 repo 를 zip 으로 다운로드하거나 클론
+2. `install.command` 더블클릭
+3. 터미널이 열리며 자동 실행:
+   - 기존 `~/.claude/skills` 는 타임스탬프 백업으로 보존
+   - GitHub 최신 버전이 `~/.claude/skills` 에 새로 설치됨
+
+> ⚠️ 처음 더블클릭 시 macOS 보안 차단이 뜨면:
+> 시스템 설정 → 개인정보 보호 및 보안 → "확인 없이 열기" 클릭
+> 또는 우클릭 → 열기 → 열기
+
+### 방법 2: 명령어
+
 ```bash
 # 최초 1회 (새 기기)
 git clone https://github.com/hansy-daangn/claude-skills.git ~/.claude/skills
