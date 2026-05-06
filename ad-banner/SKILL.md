@@ -74,6 +74,11 @@ description: |
 | R6 | `text.height` 사용 금지 — `calcH()` 수식만 | `references/foundation-typography.md` |
 | R7 | 카피는 당근 voice 9개 체크리스트 통과 (능동·동네·구체·~해요) | `references/foundation-voice-tone.md` |
 | R8 | CTA는 voice-tone §5 작동 원리로 생성 (4가지 후킹 패턴 + 자가 검증 6개 통과). copy-library는 사례 참고만 | `references/foundation-voice-tone.md` (§5) |
+| R9 | 로고는 반드시 `Logo_korean`. `Logo_business` 등 변형 절대 금지 | `references/layouts/INSIGHT_RULES.md` L1 |
+| R10 | 로고 일부만 보이거나 사라진 케이스 금지 (visible/clip 검증) | `references/layouts/INSIGHT_RULES.md` L2 |
+| R11 | 텍스트 박스(Rectangle/Autolayout) 보존. CTA 박스는 같은 사이즈 프레임으로 감싸고 색상 사용 | `references/layouts/INSIGHT_RULES.md` L3, L7 |
+| R12 | 모든 텍스트 노드는 자동너비. 한 노드 내 mixed 스타일(폰트·자간·줄간격·색·굵기) 금지 — 다르면 노드 분리 | `references/layouts/INSIGHT_RULES.md` L5, L6 |
+| R13 | 마진은 정답 시안과 무관하게 항상 foundation-spacing 적용 ⭐ | `references/layouts/INSIGHT_RULES.md` L4 |
 
 ---
 
@@ -88,19 +93,21 @@ description: |
 | `references/foundation-typography.md` | 폰트 크기·행간·자간 — fitSize·calcH 수식 근거 |
 | `references/foundation-logo.md` | 로고 컴포넌트 키 + 비율별 크기 |
 | `references/copy-library.md` | 캠페인별 헤드/서브/CTA 후보 |
-| `references/layout-spec.md` | 비율별(A/B/C/D) 레이아웃 구조 |
+| `references/layout-spec.md` | 비율별(A/B/C/D) 레이아웃 구조 (legacy 단일 패턴) |
+| `references/layouts/LOCKED_SIZES.md` | 🔒 사이즈 락 — 10종 외 작업 금지 |
+| `references/layouts/INSIGHT_RULES.md` | 사이즈 무관 절대 룰 (L1~L7) |
+| `references/layouts/README.md` | 폴더 진입점 + 학습 표준 한 줄 포맷 |
+| `references/layouts/{W}x{H}.md` | 사이즈별 인사이트 (학습 후 채움, 변형 3~4개) |
 | `references/figma-generator.md` | Figma 생성 코드 템플릿 |
 | `references/quality-checklist.md` | 출력 전 자가 검증 |
 
 ---
 
-## 기본 사이즈 세트
+## 기본 사이즈 세트 🔒
 
-**몰로코 (기본):** 320×100 / 300×250 / 720×720 / 480×320 / 1200×600 / 320×480 / 720×960 / 768×1024 / 720×1280 / 1200×1500
+사이즈 10종은 `references/layouts/LOCKED_SIZES.md`에 락. **사용자의 직접 수정 요청 없이 변경 금지** (추가/제거/치환 모두).
 
-**구글:** 300×250 / 728×90 / 160×600 / 300×600 / 970×250
-
-**메타:** 1080×1080 / 1200×628 / 1080×1920
+`320×100, 300×250, 320×480, 480×320, 768×1024, 720×720, 720×960, 720×1280, 1200×628, 1200×1600`
 
 레이아웃 함수: `layA` Wide Thin(≥2.5) / `layB` Square(0.9~1.3) / `layC` Landscape(1.3~2.5) / `layD` Portrait(<0.9)
 
