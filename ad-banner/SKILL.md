@@ -8,7 +8,9 @@ description: |
   - `#배너제작`
   - `#광고소재`
 
-  워크플로우: 당근 voice 카피 작성 → Figma 신규 페이지에 전 사이즈 프레임 생성
+  **발동 안 함:** 해시태그 없는 "배너 만들어줘", "이미지 시안 보여줘" 같은 자연어 / SEED 토큰 단순 조회 / Figma 파일 일반 편집.
+
+  워크플로우: 당근 voice 카피 작성 → Figma 신규 페이지에 전 사이즈 프레임 생성 → 스크린샷 검증
 ---
 
 # ad-banner 스킬
@@ -45,35 +47,47 @@ description: |
 1. **입력 파싱** — 주제/소구점/매체 추출. 미지정이면 몰로코 기본.
 2. **카피 작성** — `references/foundation-voice-tone.md` + `references/copy-library.md` 참조. HEAD/SUB/CTA 3종.
 3. **Figma 생성** — `references/figma-generator.md` 코드 템플릿에 PAGE_NAME + 카피만 치환해서 `use_figma` 실행.
-4. **검증** — `get_screenshot` 2~3개 확인 (겹침/잘림/로고 충돌). 문제 있으면 파라미터 조정 후 재생성.
+4. **검증** — `get_screenshot` 2~3개 확인 (겹침/잘림/로고 충돌). 문제 있으면 `references/troubleshooting.md` 참고하여 파라미터 조정 후 재생성.
 5. **체크리스트 출력** — 아래 SEED 확인 블록 반드시 포함.
-
-```
-✅ SEED 적용 확인
-- 폰트: Karrot Sans Heavy/Bold [또는 Noto Sans KR Black/Bold 플레이스홀더]
-- 브랜드 컬러: $color.bg.brand-solid
-- 연한 배경: $color.bg.brand-weak
-- 메인 텍스트: $color.fg.neutral
-- CTA 모서리: $radius.full (9999px)
-- Logo_korean 컴포넌트 인스턴스 (Primary/White)
-- 당근 voice 키워드: "[실제 쓴 키워드]"
-- 페이지: [PAGE_NAME]
-```
 
 ---
 
-## 절대 규칙 (각 항목은 해당 foundation 파일이 정답)
+## 성공 출력 예시
 
-| # | 룰 | 정답 출처 |
-|---|---|---|
-| R1 | Karrot Sans Heavy/Bold (없으면 Noto Sans KR Black/Bold + 노란 경고) | `references/foundation-typography.md` |
-| R2 | Logo_korean 컴포넌트 인스턴스 (🥕 이모지·SVG 직접 그리기 금지) | `references/foundation-logo.md` |
-| R3 | SEED Role 토큰 정확값만 (#FF6F0F 등 유사값 금지) | `references/foundation-color.md` |
-| R4 | spacing은 비율 + clamp(min, max). 절대 px 토큰 그대로 금지 | `references/foundation-spacing.md` |
-| R5 | radius는 CTA·장식원만. CTA = `$radius.full`(9999) | `references/foundation-radius.md` |
-| R6 | `text.height` 사용 금지 — `calcH()` 수식만 | `references/foundation-typography.md` |
-| R7 | 카피는 당근 voice 9개 체크리스트 통과 (능동·동네·구체·~해요) | `references/foundation-voice-tone.md` |
-| R8 | CTA는 voice-tone §5 작동 원리로 생성 (4가지 후킹 패턴 + 자가 검증 6개 통과). copy-library는 사례 참고만 | `references/foundation-voice-tone.md` (§5) |
+마지막에 사용자에게 보여줘야 할 형태:
+
+```
+✅ ad-banner 완료
+- 페이지: 노트북_중고거래_2604
+- 생성 사이즈: 10개 (몰로코 기본)
+- 카피: HEAD "메모리값 또 올랐대요" / SUB "동네 노트북 한 번 둘러봐요" / CTA "당근에서 보기"
+
+✅ SEED 적용 확인
+- 폰트: Karrot Sans Heavy/Bold
+- 브랜드 컬러: $color.bg.brand-solid (#ff6600)
+- 연한 배경: $color.bg.brand-weak (#fff2ec)
+- 메인 텍스트: $color.fg.neutral (#212124)
+- CTA 모서리: $radius.full (9999px)
+- Logo_korean 컴포넌트 인스턴스 (Primary/White)
+- 당근 voice 키워드: "또 올랐대요", "동네", "둘러봐요"
+- 검증 스크린샷: 320×100, 720×720, 1200×1500 (3장 OK)
+```
+
+카피 voice가 통과하는 예시 vs 실패하는 예시:
+
+| ✅ 통과 | ❌ 실패 |
+|---|---|
+| "메모리값 또 올랐대요" (능동·구체·~해요) | "노트북 최저가 할인" (마케팅어) |
+| "동네 노트북 한 번 둘러봐요" (동네·~해요) | "전국 최저가 보장" (전국·과장) |
+| "당근에서 보기" (구체·동사) | "지금 클릭" (밍밍·일반어) |
+
+---
+
+## 절대 규칙
+
+R1~R7 전체 표는 `references/rules.md`. SEED 토큰·voice·spacing 모두 그 표의 정답 출처(foundation 파일)를 따라간다.
+
+> **공유 토큰**: 색·타이포 등 SEED 디자인 토큰의 단일 출처는 `seed-design` 스킬이다. 본 스킬의 foundation-* references는 배너 생성에 필요한 부분만 발췌·캐시한 것이며, 충돌 시 `seed-design` 쪽이 우선.
 
 ---
 
@@ -81,6 +95,9 @@ description: |
 
 | 파일 | 언제 |
 |---|---|
+| `references/rules.md` | R1~R7 절대 규칙 표 |
+| `references/sizes.md` | 매체별 기본 사이즈 + 레이아웃 함수 분기 |
+| `references/troubleshooting.md` | 검증 실패 시 처방표 |
 | `references/foundation-voice-tone.md` | 카피 작성 시 — voice/tone, 헤드 패턴, 자가 검증 9개 |
 | `references/foundation-color.md` | 색 결정 시 — SEED Role 토큰, 배경/텍스트 페어링 |
 | `references/foundation-spacing.md` | 간격 결정 시 — 비율 공식 + clamp + 사이즈별 환산표 |
@@ -91,29 +108,3 @@ description: |
 | `references/layout-spec.md` | 비율별(A/B/C/D) 레이아웃 구조 |
 | `references/figma-generator.md` | Figma 생성 코드 템플릿 |
 | `references/quality-checklist.md` | 출력 전 자가 검증 |
-
----
-
-## 기본 사이즈 세트
-
-**몰로코 (기본):** 320×100 / 300×250 / 720×720 / 480×320 / 1200×600 / 320×480 / 720×960 / 768×1024 / 720×1280 / 1200×1500
-
-**구글:** 300×250 / 728×90 / 160×600 / 300×600 / 970×250
-
-**메타:** 1080×1080 / 1200×628 / 1080×1920
-
-레이아웃 함수: `layA` Wide Thin(≥2.5) / `layB` Square(0.9~1.3) / `layC` Landscape(1.3~2.5) / `layD` Portrait(<0.9)
-
----
-
-## 자주 있는 실패 패턴
-
-| 증상 | 처방 |
-|---|---|
-| 텍스트 겹침 | `calcH()` 사용 확인 (foundation-typography) |
-| 텍스트 프레임 밖으로 | `fitSize()` 적용 확인 (foundation-typography) |
-| 로고가 이모지 | `importComponentByKeyAsync` 확인 (foundation-logo) |
-| 카피 밍밍함 | copy-library.md 템플릿 사용 |
-| Landscape에서 로고↔텍스트 충돌 | layC 수직 안전 로직 확인 (figma-generator) |
-| 색 hex가 SEED와 다름 | foundation-color.md Drift 알림 참고 |
-| 큰 배너에서 padding이 점처럼 좁음 | 비율 공식 + clamp 적용 (foundation-spacing) |
